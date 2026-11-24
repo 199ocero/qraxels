@@ -1,0 +1,628 @@
+{
+ "scenes": [
+  {
+   "purpose": "hook",
+   "narration": "Nobody is coming to save you.",
+   "speed": 1.05,
+   "pause_after": 0.2,
+   "component": "Crowd",
+   "props": {
+    "ending": "alone"
+   },
+   "start": 0.0,
+   "end": 2.848,
+   "hit": "Nobody"
+  },
+  {
+   "purpose": "setup",
+   "narration": "Not your parents. Not your friends.",
+   "speed": 1.05,
+   "pause_after": 0.2,
+   "component": "Crowd",
+   "props": {
+    "ending": "alone"
+   },
+   "start": 2.848,
+   "end": 5.258
+  },
+  {
+   "purpose": "explain",
+   "narration": "You said you'd start Monday.",
+   "speed": 1.05,
+   "pause_after": 0.2,
+   "component": "Clock",
+   "props": {
+    "label": "MONDAY"
+   },
+   "start": 5.258,
+   "end": 7.258,
+   "hit": "Monday"
+  },
+  {
+   "purpose": "explain",
+   "narration": "Then you scrolled till two in the morning.",
+   "speed": 1.05,
+   "pause_after": 0.2,
+   "component": "Split",
+   "props": {
+    "left": "YOU",
+    "right": "THEM"
+   },
+   "start": 7.258,
+   "end": 10.338
+  },
+  {
+   "purpose": "explain",
+   "narration": "Again.",
+   "speed": 1.05,
+   "pause_after": 0.2,
+   "component": "BigWord",
+   "props": {
+    "word": "AGAIN"
+   },
+   "start": 10.338,
+   "end": 11.088,
+   "sfx": "glitch"
+  },
+  {
+   "purpose": "explain",
+   "narration": "You're not tired. You're comfortable.",
+   "speed": 1.05,
+   "pause_after": 0.2,
+   "component": "RainWalk",
+   "props": {
+    "sign": "DAY 1"
+   },
+   "start": 11.088,
+   "end": 13.233,
+   "hit": "comfortable"
+  },
+  {
+   "purpose": "explain",
+   "narration": "And comfortable is killing you.",
+   "speed": 1.05,
+   "pause_after": 0.7,
+   "component": "Fall",
+   "props": {},
+   "start": 13.233,
+   "end": 16.127,
+   "hit": "killing"
+  },
+  {
+   "purpose": "payoff",
+   "narration": "So get up.",
+   "speed": 1.0,
+   "pause_after": 0.7,
+   "component": "BigWord",
+   "props": {
+    "word": "GET UP"
+   },
+   "start": 16.127,
+   "end": 17.627,
+   "camera": "push"
+  },
+  {
+   "purpose": "explain",
+   "narration": "Get up when it's cold.",
+   "speed": 1.15,
+   "pause_after": 0.2,
+   "component": "PullUp",
+   "props": {
+    "label": "5 AM"
+   },
+   "start": 17.627,
+   "end": 19.492,
+   "hit": "cold"
+  },
+  {
+   "purpose": "explain",
+   "narration": "Get up when it hurts.",
+   "speed": 1.15,
+   "pause_after": 0.2,
+   "component": "Lift",
+   "props": {
+    "label": "REP 10"
+   },
+   "start": 19.492,
+   "end": 21.356,
+   "hit": "hurts"
+  },
+  {
+   "purpose": "explain",
+   "narration": "Get up when nobody claps.",
+   "speed": 1.15,
+   "pause_after": 0.2,
+   "component": "Boxing",
+   "props": {},
+   "start": 21.356,
+   "end": 23.32
+  },
+  {
+   "purpose": "explain",
+   "narration": "Every day. Every single day.",
+   "speed": 1.15,
+   "pause_after": 0.2,
+   "component": "Climb",
+   "props": {
+    "steps": [
+     "DAY 1",
+     "DAY 30",
+     "DAY 100",
+     "DAY 365"
+    ]
+   },
+   "start": 23.32,
+   "end": 25.37,
+   "hit": "single"
+  },
+  {
+   "purpose": "explain",
+   "narration": "Build it while they sleep.",
+   "speed": 1.05,
+   "pause_after": 0.2,
+   "component": "Grind",
+   "props": {
+    "stat": {
+     "label": "NET WORTH",
+     "to": 63930,
+     "prefix": "$"
+    }
+   },
+   "start": 25.37,
+   "end": 27.42,
+   "sfx": "cash"
+  },
+  {
+   "purpose": "outro",
+   "narration": "And one day, they'll call it luck.",
+   "speed": 1.05,
+   "pause_after": 0.7,
+   "component": "Summit",
+   "props": {
+    "flag": "YOU"
+   },
+   "start": 27.42,
+   "end": 31.42,
+   "hit": "luck",
+   "sfx": "crowd",
+   "camera": "tilt"
+  }
+ ],
+ "words": [
+  {
+   "word": "Nobody",
+   "start": 0.0,
+   "end": 0.333,
+   "scene": 0
+  },
+  {
+   "word": "is",
+   "start": 0.391,
+   "end": 0.724,
+   "scene": 0
+  },
+  {
+   "word": "coming",
+   "start": 0.783,
+   "end": 1.115,
+   "scene": 0
+  },
+  {
+   "word": "to",
+   "start": 1.174,
+   "end": 1.507,
+   "scene": 0
+  },
+  {
+   "word": "save",
+   "start": 1.565,
+   "end": 1.898,
+   "scene": 0
+  },
+  {
+   "word": "you.",
+   "start": 1.957,
+   "end": 2.289,
+   "scene": 0
+  },
+  {
+   "word": "Not",
+   "start": 2.848,
+   "end": 3.154,
+   "scene": 1
+  },
+  {
+   "word": "your",
+   "start": 3.208,
+   "end": 3.514,
+   "scene": 1
+  },
+  {
+   "word": "parents.",
+   "start": 3.568,
+   "end": 3.874,
+   "scene": 1
+  },
+  {
+   "word": "Not",
+   "start": 3.928,
+   "end": 4.234,
+   "scene": 1
+  },
+  {
+   "word": "your",
+   "start": 4.288,
+   "end": 4.594,
+   "scene": 1
+  },
+  {
+   "word": "friends.",
+   "start": 4.648,
+   "end": 4.954,
+   "scene": 1
+  },
+  {
+   "word": "You",
+   "start": 5.258,
+   "end": 5.564,
+   "scene": 2
+  },
+  {
+   "word": "said",
+   "start": 5.618,
+   "end": 5.924,
+   "scene": 2
+  },
+  {
+   "word": "you'd",
+   "start": 5.978,
+   "end": 6.284,
+   "scene": 2
+  },
+  {
+   "word": "start",
+   "start": 6.338,
+   "end": 6.644,
+   "scene": 2
+  },
+  {
+   "word": "Monday.",
+   "start": 6.698,
+   "end": 7.004,
+   "scene": 2
+  },
+  {
+   "word": "Then",
+   "start": 7.258,
+   "end": 7.564,
+   "scene": 3
+  },
+  {
+   "word": "you",
+   "start": 7.618,
+   "end": 7.924,
+   "scene": 3
+  },
+  {
+   "word": "scrolled",
+   "start": 7.978,
+   "end": 8.284,
+   "scene": 3
+  },
+  {
+   "word": "till",
+   "start": 8.338,
+   "end": 8.644,
+   "scene": 3
+  },
+  {
+   "word": "two",
+   "start": 8.698,
+   "end": 9.004,
+   "scene": 3
+  },
+  {
+   "word": "in",
+   "start": 9.058,
+   "end": 9.364,
+   "scene": 3
+  },
+  {
+   "word": "the",
+   "start": 9.418,
+   "end": 9.724,
+   "scene": 3
+  },
+  {
+   "word": "morning.",
+   "start": 9.778,
+   "end": 10.084,
+   "scene": 3
+  },
+  {
+   "word": "Again.",
+   "start": 10.338,
+   "end": 10.678,
+   "scene": 4
+  },
+  {
+   "word": "You're",
+   "start": 11.088,
+   "end": 11.41,
+   "scene": 5
+  },
+  {
+   "word": "not",
+   "start": 11.467,
+   "end": 11.789,
+   "scene": 5
+  },
+  {
+   "word": "tired.",
+   "start": 11.846,
+   "end": 12.168,
+   "scene": 5
+  },
+  {
+   "word": "You're",
+   "start": 12.225,
+   "end": 12.547,
+   "scene": 5
+  },
+  {
+   "word": "comfortable.",
+   "start": 12.604,
+   "end": 12.926,
+   "scene": 5
+  },
+  {
+   "word": "And",
+   "start": 13.233,
+   "end": 13.555,
+   "scene": 6
+  },
+  {
+   "word": "comfortable",
+   "start": 13.612,
+   "end": 13.934,
+   "scene": 6
+  },
+  {
+   "word": "is",
+   "start": 13.99,
+   "end": 14.313,
+   "scene": 6
+  },
+  {
+   "word": "killing",
+   "start": 14.369,
+   "end": 14.692,
+   "scene": 6
+  },
+  {
+   "word": "you.",
+   "start": 14.748,
+   "end": 15.07,
+   "scene": 6
+  },
+  {
+   "word": "So",
+   "start": 16.127,
+   "end": 16.467,
+   "scene": 7
+  },
+  {
+   "word": "get",
+   "start": 16.527,
+   "end": 16.867,
+   "scene": 7
+  },
+  {
+   "word": "up.",
+   "start": 16.927,
+   "end": 17.267,
+   "scene": 7
+  },
+  {
+   "word": "Get",
+   "start": 17.627,
+   "end": 17.919,
+   "scene": 8
+  },
+  {
+   "word": "up",
+   "start": 17.97,
+   "end": 18.262,
+   "scene": 8
+  },
+  {
+   "word": "when",
+   "start": 18.313,
+   "end": 18.604,
+   "scene": 8
+  },
+  {
+   "word": "it's",
+   "start": 18.656,
+   "end": 18.947,
+   "scene": 8
+  },
+  {
+   "word": "cold.",
+   "start": 18.999,
+   "end": 19.29,
+   "scene": 8
+  },
+  {
+   "word": "Get",
+   "start": 19.492,
+   "end": 19.783,
+   "scene": 9
+  },
+  {
+   "word": "up",
+   "start": 19.834,
+   "end": 20.126,
+   "scene": 9
+  },
+  {
+   "word": "when",
+   "start": 20.177,
+   "end": 20.469,
+   "scene": 9
+  },
+  {
+   "word": "it",
+   "start": 20.52,
+   "end": 20.812,
+   "scene": 9
+  },
+  {
+   "word": "hurts.",
+   "start": 20.863,
+   "end": 21.154,
+   "scene": 9
+  },
+  {
+   "word": "Get",
+   "start": 21.356,
+   "end": 21.647,
+   "scene": 10
+  },
+  {
+   "word": "up",
+   "start": 21.699,
+   "end": 21.99,
+   "scene": 10
+  },
+  {
+   "word": "when",
+   "start": 22.042,
+   "end": 22.333,
+   "scene": 10
+  },
+  {
+   "word": "nobody",
+   "start": 22.384,
+   "end": 22.676,
+   "scene": 10
+  },
+  {
+   "word": "claps.",
+   "start": 22.727,
+   "end": 23.019,
+   "scene": 10
+  },
+  {
+   "word": "Every",
+   "start": 23.32,
+   "end": 23.626,
+   "scene": 11
+  },
+  {
+   "word": "day.",
+   "start": 23.68,
+   "end": 23.986,
+   "scene": 11
+  },
+  {
+   "word": "Every",
+   "start": 24.04,
+   "end": 24.346,
+   "scene": 11
+  },
+  {
+   "word": "single",
+   "start": 24.4,
+   "end": 24.706,
+   "scene": 11
+  },
+  {
+   "word": "day.",
+   "start": 24.76,
+   "end": 25.066,
+   "scene": 11
+  },
+  {
+   "word": "Build",
+   "start": 25.37,
+   "end": 25.676,
+   "scene": 12
+  },
+  {
+   "word": "it",
+   "start": 25.73,
+   "end": 26.036,
+   "scene": 12
+  },
+  {
+   "word": "while",
+   "start": 26.09,
+   "end": 26.396,
+   "scene": 12
+  },
+  {
+   "word": "they",
+   "start": 26.45,
+   "end": 26.756,
+   "scene": 12
+  },
+  {
+   "word": "sleep.",
+   "start": 26.81,
+   "end": 27.116,
+   "scene": 12
+  },
+  {
+   "word": "And",
+   "start": 27.42,
+   "end": 27.76,
+   "scene": 13
+  },
+  {
+   "word": "one",
+   "start": 27.82,
+   "end": 28.16,
+   "scene": 13
+  },
+  {
+   "word": "day,",
+   "start": 28.22,
+   "end": 28.56,
+   "scene": 13
+  },
+  {
+   "word": "they'll",
+   "start": 28.62,
+   "end": 28.96,
+   "scene": 13
+  },
+  {
+   "word": "call",
+   "start": 29.02,
+   "end": 29.36,
+   "scene": 13
+  },
+  {
+   "word": "it",
+   "start": 29.42,
+   "end": 29.76,
+   "scene": 13
+  },
+  {
+   "word": "luck.",
+   "start": 29.82,
+   "end": 30.16,
+   "scene": 13
+  }
+ ],
+ "audio": [],
+ "music": {
+  "src": "sound/music/drift-phonk.mp3",
+  "drop": 10.92,
+  "bpm": 95.97,
+  "downbeat": 0.915,
+  "pulseEvery": 1,
+  "duration": 51.3
+ }
+}

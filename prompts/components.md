@@ -1,0 +1,287 @@
+Components (all animated):
+- Crowd {ending?: "alone" | "stands"}: strangers walk past one lit figure sitting alone; "stands" = gets up. Loneliness, "nobody cares", the turn.
+- Fall {}: knocked flat, stays down, then gets back up into the light. Failure, "get back up".
+- Split {left, right ≤12 chars}: left half lies in bed scrolling (dim), right half runs (lit). "YOU" vs "THEM", "WANT" vs "WORK", excuses vs action.
+- PullUp {label?: ≤16, e.g. "5 AM"}: pull-ups. Pain, doing it anyway.
+- Lift {label?: ≤16, e.g. "REP 10"}: heavy deadlift reps. Strength, weight, pressure.
+- Boxing {label?: ≤16}: punching a heavy bag (punch sounds are synced). Fighting, aggression, "hit back".
+- Grind {stat?}: working late at a desk, coffee piling up, optional counter. Work, building.
+- RainWalk {sign?: ≤14, e.g. "YEAR 1"; stat?}: walking alone in the rain past a milestone. Struggle, time, the long road.
+- Climb {steps[2-5]: ≤12 each}: climbing labeled stairs, arms up at the top. Routine, progress.
+- Run {goal?: ≤16}: sprinting, the goal closing in. Urgency, "go".
+- Summit {flag?: ≤12}: climbs the mountain and plants a flag. Victory, the payoff.
+- Clock {label?: ≤16}: a clock spinning, the figure keeps walking (ticking sound). Time running out.
+- Chart {label?: ≤16, trend?: "up" | "down" | "comeback"}: a line graph draws itself while a tiny figure walks along the line. Money, progress, crashing, the comeback ("comeback" dips hard then rockets).
+- Cash {stat?}: bills drop onto a growing stack next to the figure. Saving, earning, what it adds up to.
+- Plan {items[2-4]: ≤14 each}: a whiteboard checklist, each box gets ticked in turn. The plan, the steps, "here's how".
+- Car {sign?: ≤14, e.g. "EXIT: BROKE", "NEXT: 2030"}: driving at night under street lights, a highway sign passes. The road ahead, direction, leaving something behind.
+- Phone {label?: ≤16, e.g. "SCREEN TIME 6H"}: a giant phone, a thumb scrolling an endless feed. Distraction, wasted hours, comparison.
+- Calendar {label?: ≤16, e.g. "MONTH 1"}: a calendar fills with X's day by day. Consistency, streaks, time passing.
+- Door {label?: ≤12}: a door swings open, light floods out, a silhouette walks in. The turn, a new chapter, the ending.
+- Bricks {label?: ≤16}: a wall rises brick by brick. Building, patience, compounding.
+- Traffic {label?: ≤16}: three lanes of stuck cars with brake lights; you run past all of them. Everyone waiting, you moving.
+- Rush {}: rush hour, rows of grey people streaming one way, one lit figure walking against them. Going against the crowd, the 9-to-5 herd.
+- Stage {label?: ≤16}: a spotlight, the figure raises its arms, a sea of heads and phones in front. Being seen, the win, proving them wrong.
+- Dominoes {label?: ≤16}: dominoes, each bigger than the last, knock each other down. Small habits compounding, chain reactions.
+- Hourglass {label?: ≤16}: the sand runs out. Time, deadlines, "you don't have forever".
+- Scale {left, right ≤12}: a balance; the light thing (left) loses to the heavy thing (right): "COMFORT" vs "GOALS", "EXCUSES" vs "RESULTS".
+- Rocket {label?: ≤16}: shakes on the pad, ignites, launches. The breakthrough, the drop, the payoff.
+- Tree {label?: ≤16}: a seed grows into a full tree. Patience, compounding, what you plant now.
+- Window {label?: ≤16, e.g. "2:00 AM"}: a sleeping city, one lit window, the camera pushes in. Working while others sleep.
+- Wheel {label?: ≤16, e.g. "9 TO 5"}: running flat out in a hamster wheel. The rat race, busy but going nowhere.
+- Chains {label?: ≤16}: chained to two posts, straining, the chains snap. Breaking free, debt, habits, the turn.
+- Ladder {label?}: everyone stuck on their ladders; yours keeps climbing. The corporate ladder, climbing past people.
+- Bridge {label?}: walking over a chasm on planks that appear one step ahead. Faith, building as you go, "you don't need the whole plan".
+- Storm {label?}: leaning into wind, sideways rain, lightning. Hard times, pushing through.
+- Mirror {label?, e.g. "FUTURE YOU"}: slumped in front of a mirror where the other you stands tall; you straighten up. Self-image, who you could be.
+- Jar {stat?}: coins drop into a jar that keeps filling; its sticker shows the stat's label. Saving, small deposits piling up, patience.
+- Target {label?}: arrows land closer each time; the last one is dead centre. Focus, practice, missing until you don't.
+- Bulb {label?}: a dead bulb flickers then blazes on. The idea, the realisation, the turn.
+- Battery {label?, drain?: true}: a giant battery charging (or draining, with drain) with the %. Energy, burnout, recharging.
+- Boulder {label?}: pushing a boulder up a hill. The grind nobody sees, heavy work.
+- Wallet {label?, e.g. "$0.00"}: an empty wallet falls open and a moth flies out. Broke, the cost of excuses.
+- Lock {label?}: a key slides in, turns, the lock springs open. Unlocking, access, the turn.
+- Puzzle {label?}: pieces fly in and snap into one square. It all comes together.
+- Train {label?, e.g. "MISSED IT"}: a train roars past and is gone; you're left on the platform. Missed chances, the window closing.
+- Bars {label?}: a bar chart, each bar taller, a tiny figure on the last. Growth, results stacking up.
+- Fork {left, right ≤12}: a road splits; dim sign left, lit sign right, you take the right. A choice: "EASY" vs "HARD".
+- Gauge {label?}: a speedometer needle sweeps into the red. Full effort, pressure, max speed.
+More pictures. Each takes only {label?: ≤16} (an optional stamp at the top; leave it out unless it adds a fact):
+Money and work:
+- Piggy: coins drop into a piggy bank, its count ticking up. Saving small amounts.
+- Vault: a vault wheel spins and the door swings open onto light. Wealth, unlocking, the payoff.
+- Receipt: a receipt keeps printing line after line of spending. Lifestyle creep, where the money went.
+- Card: a card goes in and DECLINED flashes. Broke, overspending, consequences.
+- Stacks: coin stacks grow left to right, a figure on the tallest. Compounding money.
+- Paycheck: a paycheck lands in your hand and the bills fly straight back out. Living paycheck to paycheck.
+- Cubicle: rows of grey cubicle workers, one stands up and walks out. Quitting, leaving the 9-to-5.
+- Coffee: a mug fills, steam rising, a 5 AM clock. Early mornings, the routine.
+- Laptop: a laptop opens, code scrolls, the figure types. Building online, side hustle, working on it.
+- Inbox: envelopes pile up under an UNREAD counter. Overwhelm, busywork.
+- Shop: a storefront's sign flips from CLOSED to OPEN. Starting a business, launch day.
+- Deal: two hands meet and shake. The deal, partnership, agreement.
+- Leak: money pours into a bucket and leaks out of its holes. Wasted money, bad habits draining you.
+- Candles: stock-chart candlesticks march up, a few red days. Investing, ups and downs, long-term growth.
+- Dice: dice tumble and land on snake eyes. Gambling, luck vs work.
+- Slots: a slot machine spins and lands on a mismatch. Get-rich-quick, chasing luck.
+- BallChain: dragging a ball and chain marked $. Debt, being weighed down.
+- Pyramid: a pyramid of grey figures with one lit figure on top. Hierarchy, the top 1%.
+- Printer: a money printer churns out bills. Income machine, systems that pay you.
+- Pie: a pie chart fills slice by slice, the last one pops out. Your share, breakdown of time or money.
+- Magnet: a magnet pulls coins toward the figure. Attracting money or opportunity.
+- Faucet: a tap drips coins into a growing pool. Passive income.
+- Meter: a fundraising thermometer fills to 100% and bursts. Reaching the goal.
+- Conveyor: identical grey figures ride a conveyor belt; one steps off. The system, conformity, leaving it.
+- Gears: interlocking gears turn together, one lit. Systems, process, everything working together.
+- PunchClock: a time card gets stamped IN, OUT, IN, OUT. The 9-to-5 loop, trading time for money.
+- Tag: a price tag swings while its price climbs. Cost, what it takes, inflation.
+- Crown: a crown lowers onto the figure's head. Becoming the best, winning.
+- Trophy: a trophy rises on a pedestal and gleams. Achievement, the prize.
+- Podium: the figure steps up onto first place, confetti falls. Winning, beating competition.
+- Lottery: a scratch ticket is scratched: TRY AGAIN. Waiting for luck, false hope.
+Mind and habits:
+- Brain: a brain lights up, sparks racing along its folds. Thinking, learning, mindset.
+- Cloud: a storm cloud rains only on the figure, then clears to sun. Negative thoughts, a dark mood lifting.
+- Maze: a dot finds its way through a maze to the exit. Figuring it out, the path through confusion.
+- Book: pages flip fast, page count climbing. Reading, learning, studying.
+- Alarm: an alarm rings beside the bed; the figure gets up. Waking up early, discipline.
+- Couch: slumped on the couch, the TV's flicker, 1 AM. Laziness, wasted nights.
+- Pings: notification bubbles keep popping around the figure. Distraction, noise.
+- Sleep: asleep under the moon, Zs drifting up. Rest, recovery, sleeping on your dreams.
+- Meditate: sitting cross-legged, hovering, calm rings pulsing. Calm, focus, peace.
+- Journal: a pen writes line after line. Writing goals, reflection, planning.
+- Mask: the figure lowers a smiling mask; head hung behind it. Faking it, hiding pain.
+- Shadow: a small figure casts a giant hero shadow. Potential, who you could be.
+- Cage: the cage door was open all along; the figure walks out. Self-imposed limits, freedom.
+- OutBox: the figure pushes the lid off a box and climbs out. Thinking outside the box, breaking out.
+- Glass: a glass fills from empty to full. Half full, filling your cup, progress.
+- Iceberg: the small tip (10%) over a huge hidden mass (90%). What people don't see, the hidden work.
+- Compass: a compass needle spins wildly, then locks north. Direction, finding your purpose.
+- Route: a dotted route draws across a map to an X. The plan, the journey, the destination.
+- Vision: looking through a telescope at one bright star. Vision, the long-term goal.
+- Footsteps: footprints appear one by one. One step at a time.
+- Zone: stepping out of a lit circle marked COMFORT ZONE. Leaving your comfort zone.
+- Slingshot: pulled back in a giant slingshot, then launched. Setbacks that launch you forward.
+- Spring: compressed under weight, then fired upward. Bouncing back, pressure into power.
+- Seesaw: a seesaw tips back and forth, then settles. Balance, trade-offs.
+- Juggle: juggling more balls than two hands can hold. Too many things at once.
+- Tightrope: walking a tightrope over the void, arms out. Risk, balance, focus.
+- Fog: walking out of thick fog into clear light. Confusion to clarity.
+- Megaphone: shouting through a megaphone, sound waves blasting. Speak up, your voice, announcing.
+- Pointing: grey figures point and laugh; the lit one keeps walking. Haters, doubters, ignoring them.
+- Puppet: a figure on strings; the strings snap and it stands alone. Breaking free of control, owning your life.
+Nature and sky:
+- Sunrise: the sun rises, rays spreading, a figure watching. A new day, a fresh start, hope.
+- Moon: the moon cycles phases, NIGHT counter. Night after night, time passing.
+- Autumn: a tree drops its leaves. Seasons changing, letting go.
+- Surf: surfing down the face of a giant wave. Riding the chaos, momentum.
+- Volcano: a volcano rumbles, then erupts. Pent-up pressure exploding, the breaking point, the drop.
+- Eclipse: the moon covers the sun; a ring of light blazes. A rare moment, darkness before light.
+- Ridge: walking a mountain ridge, peaks scrolling past. The long journey.
+- Drip: a drop hits a stone over and over until it cracks. Persistence beats resistance.
+- Desert: trudging over dunes under a blazing sun. The dry spell, enduring.
+- Snow: trudging through falling snow, leaving tracks. Cold hard times, keep going.
+- Campfire: sitting by a campfire, sparks rising. Reflection, quiet nights, warmth.
+- Lighthouse: a lighthouse beam sweeps a dark sea. Guidance, being the light.
+- Boat: a small boat tossed on big waves, holding course. Storms of life, staying the course.
+- Anchor: chained to an anchor underwater; the figure breaks free and rises. What holds you back, letting go.
+- Island: alone on a tiny island with one palm. Isolation, being alone on the path.
+- Cave: walking out of a dark cave into daylight. Coming out of a dark time.
+- Sprout: a sprout cracks up through concrete. Growth against the odds, resilience.
+- Bloom: a flower opens petal by petal. Blossoming, results showing, the payoff.
+- Cocoon: a cocoon splits; a butterfly unfolds and flies off. Transformation, the new you.
+- Bird: a bird soars above the clouds. Freedom, rising above.
+- Upstream: a fish leaps up a waterfall. Going against the current.
+- Waterfall: standing firm under a crashing waterfall. Taking the pressure, unshaken.
+- Stars: stars connect into a constellation. Connecting the dots.
+- Wish: a shooting star streaks; the figure looks up. Wishing vs doing, dreams.
+- Orbit: a planet circles a sun, LAP counter. Cycles, years going around, repetition.
+- Globe: the globe turns, one light where you are. The world, scale, your place in it.
+- Windmill: windmill blades spin faster and faster. Using the wind, momentum building.
+- Leap: running off a cliff edge into a leap (on the hit word). Leap of faith, taking the risk.
+- Sink: sinking in quicksand, then hauling out. Stuck, struggling, escaping.
+- Ice: cracks spread under the figure's feet. Danger, thin ice, things about to break.
+Action and struggle:
+- Sword: a sword is drawn and gleams. Ready to fight, preparation.
+- Shield: arrows bounce off a raised shield. Criticism bouncing off, defending.
+- Anvil: a hammer strikes glowing metal, sparks fly. Forging yourself, pressure shapes you.
+- Fire: walking straight through a wall of flames. Going through hell, fearless.
+- Breakthrough: sprinting and smashing through a brick wall (on the hit word). The breakthrough, the turn.
+- Hurdles: sprinting and clearing hurdle after hurdle. Obstacles, overcoming them one by one.
+- TugOfWar: you drag the grey team over the line. The struggle, winning the fight.
+- Rope: climbing a rope hand over hand, FT counter. Climbing, effort.
+- Pushup: push-ups with a rep counter. Discipline, reps (workout scene).
+- JumpRope: skipping rope faster and faster. Training, rhythm (workout scene).
+- Swim: swimming freestyle through waves. Staying afloat, pushing on.
+- Bike: pedalling up a steep hill. Uphill battle, grinding it out.
+- Finish: breaking the finish-line tape, arms up. Finishing, the end of the race.
+- Start: READY, SET, the gun, exploding out of the blocks (on the hit word). Starting now, go.
+- Countdown: 3, 2, 1, GO slam in. Urgency, the moment to start.
+- Press: holding up a hydraulic press, pushing it back. Pressure, not breaking.
+- Atlas: carrying the world on your shoulders, still walking. Responsibility, carrying the weight.
+- Tunnel: walking toward the light at the end of a tunnel. Hope, almost there.
+- Escalator: grey people ride down; you run up the down escalator. Working against the current.
+- Elevator: the floor counter hits 99, doors open on light. Rising fast, the top, the shortcut.
+- Umbrella: rain on the umbrella, then the sun comes out. Waiting out the storm.
+- Fist: a fist clenches and trembles. Determination, anger, resolve.
+- Heartbeat: a heart monitor flatlines, then beats back stronger (on the hit word). Coming back to life.
+- Parachute: falling, then the parachute bursts open (on the hit word). Being saved, the safety net, landing.
+- Pit: climbing up out of a deep hole into light. Rock bottom, climbing out.
+- Ceiling: smashing up through a glass ceiling (on the hit word). Breaking limits.
+- Fly: flying through the clouds, cape streaming. Unstoppable, freedom.
+- Tornado: a tornado tears past; the figure doesn't move. Chaos around you, unshaken.
+- Chess: a pawn crosses the board, becomes a queen, the king tips (on the hit word). Strategy, the underdog winning.
+- Cards: a house of cards wobbles and collapses (on the hit word). Weak foundations, it all falling apart.
+Life and milestones:
+- Fuse: a lit fuse burns toward a bomb. Time running out, something about to blow.
+- Snowball: a snowball rolls downhill, growing. Compounding, momentum.
+- Wrecking: a wrecking ball smashes a wall (on the hit word). Destroying old habits, demolition.
+- Giant: a small lit figure faces a looming grey giant. Facing your fear, the big problem.
+- Echoes: faded copies of your past selves trail behind you. Your past, growth over time.
+- Hand: a hand reaches down and pulls the figure up. Help, mentors, being lifted.
+- Gate: a barrier lifts and the figure walks through. Access granted, permission, the way opens.
+- Confetti: confetti rains, the figure jumping, arms up. Celebration, you made it.
+- Fireworks: fireworks over the skyline. Celebration, the big moment.
+- Gift: a gift box's lid pops off, light spills out (on the hit word). The reward, a gift, surprise.
+- Letter: an envelope opens, the letter rises: ACCEPTED. Acceptance, good news, the yes.
+- Suitcase: walking out the door with a suitcase. Leaving, moving on, a new life.
+- Plane: a plane takes off and climbs. Taking off, travel, launching.
+- House: a house is built, windows light up. Home, family, building a life.
+- Skyline: city towers rise one by one, the tallest glows. Building an empire, scale.
+- Crane: a crane lowers a beam onto the top floor. Building, construction, adding the next level.
+- Blueprint: a blueprint draws itself. The plan, design before building.
+- Ripple: a stone drops, ripples spread wide. Impact, small actions spreading.
+- Mic: at the mic under a spotlight, voice carrying. Speaking, your message, being heard.
+- Vlog: filming yourself on a tripod, REC blinking. Content creation, posting, documenting.
+- Loading: a loading bar stalls at 99%, then completes. Almost there, patience, it finally happens.
+- Likes: hearts float up as a like counter climbs. Going viral, validation, social media.
+- Candle: a candle burns down. Time burning away, life is short.
+- Bench: alone on a park bench under a streetlight. Loneliness, reflection.
+- Grave: a headstone, the dash between the years lights up. Mortality, what you do with your time.
+- Cake: birthday candles light, then get blown out. Another year gone, birthdays.
+- Ages: the figure grows from child to old, AGE counter. A lifetime, time passing, regret.
+- Kite: flying a kite high on the wind. Rising against resistance, freedom.
+- Balloon: holding balloons, lifting off the ground. Lightness, dreams lifting you.
+- Lead: one lit figure walks ahead, grey followers fall in behind. Leadership, others follow.
+History and engineering (for "how was it built" videos; each shows the actual method, so point the line at it):
+- Timeline {events[2-5]: {year ≤10 e.g. "2560 BC", label ≤16}}: a vertical timeline, each date drops in as it's reached. Use whenever the line moves through dates or eras.
+- Giza: a pyramid rises layer by layer while a block is hauled up a ramp. Pyramids, ramps, huge stone projects.
+- Sledge: a stone block dragged on a wooden sledge; a worker wets the sand ahead. Moving heavy stones, friction.
+- Obelisk: an obelisk is hauled upright with ropes over an A-frame. Raising obelisks, standing stones, pillars.
+- Aqueduct: water flows along the channel on top of a two-tier arched aqueduct. Roman water supply, gravity flow.
+- Arch: wedge stones on a wooden frame, the keystone drops in (on the hit word), the frame comes out, it holds. How arches work.
+- Colosseum: an arena facade rises tier by tier: three rows of arches and a solid top. Amphitheatres, Roman building.
+- GreatWall: a wall snakes over hills; signal fires light tower to tower. The Great Wall, borders, beacon signals.
+- Stonehenge: a lintel is raised on a growing timber crib and slid onto two uprights. Stonehenge, megaliths, lifting without cranes.
+- Lever: a long lever over a fulcrum lifts a stone far heavier than the person. Leverage, moving big weights.
+- Pulley: a block and tackle; ropes over pulleys let one person lift a heavy stone. Pulleys, mechanical advantage.
+- Treadwheel: a worker walks inside a giant wheel; the rope winds and a stone rises to the top of the crane. Roman and medieval cranes, cathedrals.
+- Screw: an Archimedes screw turned by a crank lifts water from the river. Archimedes, irrigation, lifting water.
+- Waterwheel: water pours onto a turning mill wheel driving a mill. Water power, mills.
+- Trebuchet: the counterweight drops, the arm whips over, the stone flies (on the hit word). Siege engines, catapults, physics of throwing.
+- Sundial: the shadow sweeps across the hour lines as the sun moves. Ancient timekeeping, astronomy.
+- Trireme: a galley's banks of oars sweep together, a ram cuts the waves. Ancient ships, navies, rowing.
+- Quarry: a wedge is hammered in, a crack runs down, the block splits off (on the hit word). Quarrying, cutting stone.
+- Scroll: a scroll unrolls to show lines of writing. Ancient texts, records, libraries, a written source.
+- Tablet: a stylus presses wedge marks into clay row by row. Cuneiform, the first writing, Mesopotamia, records.
+- Ruins: broken columns; the full temple appears over them as a ghost outline, then fades. What it looked like then vs now.
+- Dig: brushing away the sand reveals an ancient pot in the dig layers. Archaeology, evidence, how we know.
+- Tomb: inside a tomb, the lid slides off the sarcophagus and light falls in. Tombs, burials, discoveries.
+- Hieroglyphs: a wall of hieroglyphs lights up symbol by symbol by torchlight. Egyptian writing, decoding, inscriptions.
+- Moai: ropes on both sides rock a giant stone statue so it "walks" forward. Easter Island, moving statues.
+- Road: a Roman road in cross-section, built layer by layer from big stones to paving. Roads, layers, how it lasted.
+- Canal: a canal lock fills, the boat rises, the gate opens and it sails on. Canals, locks, water engineering.
+- Printing: a screw press stamps a page; printed pages come out one by one. The printing press, spreading knowledge.
+- Steam: a piston drives a flywheel, steam puffs from the boiler. Steam engines, the industrial revolution.
+- Telegraph: a key taps; dots and dashes run along the wire from pole to pole. The telegraph, Morse code, early communication.
+- Dome: a dome is built ring by ring around an open eye; a beam of light falls through it. Domes, the Pantheon, cathedrals.
+- Heights {items[2-4]: {name ≤12, meters}}: structures rise side by side to scale, with a person for reference, each height in metres. Only with real heights from the script.
+- Masonry: irregular stones lower into place and fit with no gaps and no mortar. Inca walls, precise stonework.
+- Concrete: lime and volcanic ash poured into wooden formwork; the boards come off a solid wall. Roman concrete.
+- Buttress: a tall wall bows outward until a flying buttress pushes it back. Gothic cathedrals, how tall walls stay up.
+- Castle: walls and towers rise around the keep, the drawbridge drops over the moat. Castles, defence.
+- Petra: a temple facade is carved out of the cliff from the top down. Rock-cut buildings, Petra.
+- Terraces: flat steps cut into a steep mountainside with stone walls. Machu Picchu, terrace farming.
+- StepPyramid: stepped terraces stack up with a stair to the shrine on top. Maya and Aztec temples, ziggurats.
+- Pagoda: in an earthquake the tiers sway around the free central pillar, and it stands. Earthquake-proof towers.
+- IronTower: an iron lattice tower rises girder by girder. The Eiffel Tower, iron and steel structures.
+- Suspension: towers stand, the cables are spun across, then the deck is hung from them. Suspension bridges.
+- Dam: a concrete dam holds back a lake; water spins the turbines. Dams, hydropower.
+- Borer: a tunnel boring machine grinds forward, lining the tunnel with rings. Tunnels, underground megaprojects.
+- Rails: ties go down, rails go on, spikes are hammered in. Railways, the transcontinental railroad.
+- Skeleton: copper skin panels go onto an iron skeleton. The Statue of Liberty, frame-and-skin structures.
+- Hypocaust: a furnace sends hot air under a floor raised on tile stacks. Roman underfloor heating, baths.
+- Windcatcher: a tower catches the breeze and sends it down to cool the room. Persian windcatchers, ancient air conditioning.
+- Qanat: a gently sloping tunnel carries groundwater to a village; shafts dot the surface. Qanats, desert water.
+- Stepwell: flights of stairs zigzag down to water far below. Indian stepwells, water storage.
+- Sewer: street drains feed a vaulted tunnel to the river. Roman sewers, city sanitation.
+- Antikythera: a bronze gear train turns a pointer around a dial of the sky. The Antikythera mechanism, ancient computers.
+- WaterClock: a drip fills a vessel, a float rises and points to the hours. Water clocks, ancient timekeeping.
+- Loom: the shuttle flies back and forth and cloth grows row by row. Weaving, textiles, the industrial revolution.
+- Potter: a lump of clay spins up into a pot on the wheel. Pottery, ancient crafts.
+- Casting: molten bronze pours into a mould; it's broken open on the finished figure (on the hit word). Bronze casting, statues.
+- Pendulum: the pendulum swings, the escapement lets the clock advance a tooth at a time. Mechanical clocks.
+- Locomotive: a steam locomotive chuffs along, rods and wheels turning, smoke trailing. Steam trains.
+- Airship: an airship drifts across the sky, gondola slung underneath. Zeppelins, early flight.
+- Biplane: an early biplane rolls along the sand and lifts off (on the hit word). The first flights, early aviation.
+- Obscura: light through a small hole throws the world upside down onto the wall. Camera obscura, optics, the first cameras.
+- Cannon: the fuse burns, the flash, the recoil, the smoke (on the hit word). Gunpowder, artillery.
+- SiegeTower: a siege tower rolls up to the wall and drops its ramp. Sieges, ancient warfare.
+- BatteringRam: a ram swings against the gate until it cracks (on the hit word). Sieges, breaking defences.
+- Longship: a longship with dragon prow, shields and a square sail rows through the waves. Vikings, seafaring.
+- Caravan: camels cross the dunes along a trade route. The Silk Road, trade, deserts.
+- Nazca: rope-and-stake lines on the desert turn out, from above, to be a giant bird. The Nazca lines, geoglyphs.
+- Rosetta: the same text in three scripts; matching words light up across them. The Rosetta Stone, decipherment.
+- Terracotta: rows of clay soldiers stretch into the distance. The Terracotta Army, mass production, tombs.
+- Mummy: linen wraps round and round from the feet up. Mummification, Egyptian burial.
+- Shipwreck: a diver's light sweeps the seabed and finds a wreck. Underwater archaeology, lost ships.
+- CavePaint: torchlight finds painted animals and handprints on a cave wall. Prehistoric art, the earliest people.
+- TreeRings: a trunk's cross-section, rings counted outward one per year. Dating wood, climate records, how we know dates.
+- HalfLife: a sample's carbon-14 halves again and again; the halvings give its age. Radiocarbon dating, how we know how old.
+- Lidar: a laser scan sweeps a forest and the hidden ruins beneath appear. LiDAR archaeology, lost cities found.
+Text cards:
+- BigWord {word: ≤12}: ONE giant word fills the screen (captions hide). Use for the single hardest word of a line: "NOBODY", "TODAY", "MOVE".
+- Callout {text, emphasis?}: one big static sentence (captions hide). Max 1 per video, only for a line that must be read.
+- HookCard {title, subtitle?}: avoid; open on a picture instead.
+
+stat = {label (≤20, e.g. "NET WORTH", "DAYS"), to (whole number), from?, prefix? ("$")}: only with a real number from the script.

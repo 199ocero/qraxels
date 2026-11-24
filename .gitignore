@@ -1,0 +1,7 @@
+node_modules/
+.venv/
+.env
+projects/
+# Mixkit licence: use in videos, don't redistribute the raw files. `npm run setup` downloads them.
+public/sound/
+.DS_Store
