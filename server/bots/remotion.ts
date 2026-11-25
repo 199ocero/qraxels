@@ -16,6 +16,8 @@ import { musicFor, seedOf, type Track } from "../../remotion/mono.ts";
 const FPS = 30;
 // The effects layer (remotion/MonoFx.tsx) is WebGL, which headless Chrome only runs with the ANGLE backend.
 const chromiumOptions = { gl: "angle" } as const;
+// The character is 3D (remotion/components/Figure3D.tsx); FIGURE_3D=0 renders the flat SVG one instead.
+const envVariables: Record<string, string> = process.env.FIGURE_3D ? { FIGURE_3D: process.env.FIGURE_3D } : {};
 
 // publicDir is fixed at bundle time, so each project gets its own bundle (staticFile → its audio).
 // `sound` copies the music/SFX bank in for the motivation style.
@@ -72,7 +74,7 @@ export async function renderStills(serveUrl: string, props: ExplainerProps, outD
   // One browser for every still, 4 tabs at a time, instead of a fresh browser per still.
   const puppeteerInstance = await openBrowser("chrome", { chromiumOptions });
   try {
-    const composition = await selectComposition({ serveUrl, id: "Explainer", inputProps: props, chromiumOptions, puppeteerInstance });
+    const composition = await selectComposition({ serveUrl, id: "Explainer", inputProps: props, chromiumOptions, envVariables, puppeteerInstance });
     const files = props.scenes.map((_, i) => join(outDir, `scene-${String(i + 1).padStart(2, "0")}.jpeg`));
     const onBrowserLog = ({ text }: { text: string }) => {
       const m = text.match(/DRAW_FAIL (\d+) (.*)/);
@@ -86,7 +88,7 @@ export async function renderStills(serveUrl: string, props: ExplainerProps, outD
       for (let i = queue.shift(); i !== undefined; i = queue.shift()) {
         const s = props.scenes[i];
         const frame = Math.round((((s.start ?? 0) + (s.end ?? 0)) / 2) * FPS);
-        await renderStill({ serveUrl, composition, inputProps: props, chromiumOptions, puppeteerInstance, frame, output: files[i], imageFormat: "jpeg", jpegQuality: 80, scale: 0.5, onBrowserLog });
+        await renderStill({ serveUrl, composition, inputProps: props, chromiumOptions, envVariables, puppeteerInstance, frame, output: files[i], imageFormat: "jpeg", jpegQuality: 80, scale: 0.5, onBrowserLog });
         activity(`still ${++done}/${props.scenes.length}`);
       }
     }));
@@ -104,7 +106,7 @@ export async function probeTall(serveUrl: string, props: ExplainerProps, only: n
   const cut = new Map<number, string>();
   const puppeteerInstance = await openBrowser("chrome", { chromiumOptions });
   try {
-    const composition = await selectComposition({ serveUrl, id: "Explainer", inputProps: props, chromiumOptions, puppeteerInstance });
+    const composition = await selectComposition({ serveUrl, id: "Explainer", inputProps: props, chromiumOptions, envVariables, puppeteerInstance });
     const queue = only.flatMap((i) => [20, 50, 85].map((k) => ({ i, k })));
     const total = queue.length;
     let done = 0;
@@ -117,7 +119,7 @@ export async function probeTall(serveUrl: string, props: ExplainerProps, only: n
           const m = text.match(/DRAW_CUT (\d+) (.*)/);
           if (m && !cut.has(Number(m[1]))) cut.set(Number(m[1]), `${k}% into the scene: ${m[2].slice(0, 400)}`);
         };
-        await renderStill({ serveUrl, composition, inputProps: props, chromiumOptions, puppeteerInstance, frame, output: join(outDir, `scene-${String(i + 1).padStart(2, "0")}-${k}.jpeg`), imageFormat: "jpeg", jpegQuality: 70, scale: 0.25, onBrowserLog });
+        await renderStill({ serveUrl, composition, inputProps: props, chromiumOptions, envVariables, puppeteerInstance, frame, output: join(outDir, `scene-${String(i + 1).padStart(2, "0")}-${k}.jpeg`), imageFormat: "jpeg", jpegQuality: 70, scale: 0.25, onBrowserLog });
         activity(`checking the Shorts' frames ${++done}/${total}`);
       }
     }));
@@ -239,7 +241,7 @@ export const render: Job = async ({ state, activity, signal }) => {
     signal.addEventListener("abort", cancel);
     await renderMedia({
       cancelSignal,
-      chromiumOptions,
+      chromiumOptions, envVariables,
       serveUrl,
       composition,
       inputProps: props,
@@ -299,7 +301,7 @@ export async function shortCover(serveUrl: string, video: ExplainerProps, title:
   const inputProps = { video, title, cover };
   const composition = await selectComposition({ serveUrl, id: "Thumbnail", inputProps, chromiumOptions });
   const frames = cover ? [0] : thumbFrames(video.scenes);
-  await renderStill({ serveUrl, composition, inputProps, chromiumOptions, frame: frames[1] ?? frames[0], output, imageFormat: "jpeg", jpegQuality: 90 });
+  await renderStill({ serveUrl, composition, inputProps, chromiumOptions, envVariables, frame: frames[1] ?? frames[0], output, imageFormat: "jpeg", jpegQuality: 90 });
 }
 
 // A Short's YouTube description: its title, its opening line (chapters open cold, so it's the hook), where the full
@@ -330,7 +332,7 @@ export const shorts: Job = async ({ state, activity, signal }) => {
       let last = -1;
       await renderMedia({
         cancelSignal,
-        chromiumOptions,
+        chromiumOptions, envVariables,
         serveUrl,
         composition,
         inputProps,
@@ -392,7 +394,7 @@ export const thumbs: Job = async ({ state, activity, signal }) => {
     const composition = await selectComposition({ serveUrl, id: "Thumbnail", inputProps, chromiumOptions });
     for (const [i, frame] of frames.entries()) {
       activity(`thumbnail ${i + 1}/${frames.length}`);
-      await renderStill({ serveUrl, composition, inputProps, chromiumOptions, frame, output: join(out, `thumb-${i + 1}.jpeg`), imageFormat: "jpeg", jpegQuality: 90 });
+      await renderStill({ serveUrl, composition, inputProps, chromiumOptions, envVariables, frame, output: join(out, `thumb-${i + 1}.jpeg`), imageFormat: "jpeg", jpegQuality: 90 });
     }
     const size = video.wide ? "1920x1080, for the YouTube video" : "1080x1920, for YouTube Shorts and Reels";
     return cover ? `Drew the thumbnail (${size}): projects/${state.id}/thumbs/thumb-1.jpeg.` : `Made ${frames.length} thumbnails (${size}) in projects/${state.id}/thumbs/.`;

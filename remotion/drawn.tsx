@@ -1,8 +1,10 @@
 import * as React from "react";
 import * as jsx from "react/jsx-runtime";
 import * as remotion from "remotion";
+import * as THREE from "three";
 import { FPS, H, SAFE, W, font, stage } from "./theme.ts";
-import { D, Figure, Ground, HIP, SIT, STAND, Stamp, StatCounter, VICTORY, clamp, go, lerp, mix, run, walk, walkRate } from "./components/Mono.tsx";
+import { D, Figure, Ground, HIP, SIT, STAND, Stamp, StatCounter, VICTORY, clamp, go, hooded, lerp, mix, run, walk, walkRate } from "./components/Mono.tsx";
+import { Three, toon } from "./components/Figure3D.tsx";
 import { Frame, cyc, ease, k01, pop, tall } from "./components/kit.tsx";
 import { box, place, row, split } from "./layout.ts";
 import { saidAt, tickAt } from "./mono.ts";
@@ -10,10 +12,11 @@ import type { VisualProps } from "./components/common.tsx";
 import { Backdrop } from "./Brand.tsx";
 
 // Scenes drawn for one video (projects/{id}/draw/scene-NN.tsx, written by Bolt from the director's shot) import
-// only these. "kit" is the same drawing kit the library components use (prompts/draw.md documents it); covers
+// only these. "kit" is the same drawing kit the library components use (prompts/draw.md documents it; the 3D part,
+// Three/hooded/toon with "three", prompts/draw-3d.md); covers
 // (projects/{id}/covers/*.tsx, prompts/cover.md) use it too, plus Backdrop.
-export const KIT = { W, H, FPS, SAFE, font, stage, D, HIP, STAND, SIT, VICTORY, Figure, Ground, Stamp, StatCounter, Frame, clamp, ease, pop, k01, cyc, go, lerp, mix, walk, run, walkRate, tickAt, saidAt, tall, box, split, row, place, Backdrop };
-const MODULES: Record<string, unknown> = { react: React, "react/jsx-runtime": jsx, remotion, kit: KIT };
+export const KIT = { W, H, FPS, SAFE, font, stage, D, HIP, STAND, SIT, VICTORY, Figure, Ground, Stamp, StatCounter, Frame, clamp, ease, pop, k01, cyc, go, lerp, mix, walk, run, walkRate, tickAt, saidAt, tall, box, split, row, place, Backdrop, Three, hooded, toon };
+const MODULES: Record<string, unknown> = { react: React, "react/jsx-runtime": jsx, remotion, three: THREE, kit: KIT };
 export const IMPORTS = Object.keys(MODULES);
 
 // esbuild's CommonJS output (server/bots/draw.ts toJs) → the file's default export.

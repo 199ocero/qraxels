@@ -24,6 +24,7 @@ The shot:
 - Every shot is different from every other shot. A new label on the same picture is NOT a new shot. Recurring things (the pyramid, the sledge) come back in a NEW state or from a new angle: closer, further, half-built, finished, seen from above, in cross-section.
 - Show the line literally and concretely: "two family cars on one side of a balance scale, one limestone block on the other, the beam levels" beats "a block". Numbers become something you can see (a gauge, a stack, a bar against a building, people counted out).
 - Drawable as bold black-and-white line art: shapes, silhouettes, diagrams, arrows, at most one or two short labels. No photos, faces, colour, maps with many places, or long text.
+- in3d (optional, with a shot): true draws the shot in 3D, with the hooded character standing in it. Only for a solid object or place whose depth IS the point, seen turning or from a moving viewpoint: walking around the pyramid as it rises, gears meshing seen at an angle, a coin spinning, flying over a city of blocks. Never for charts, diagrams, labels or side-on actions (those are flat). At most one in four shots.
 
 Extra fields on every scene:
 - hit (optional): ONE word from that scene's narration, exactly as written, for the key names and numbers. Stay within your chapter's budget above.

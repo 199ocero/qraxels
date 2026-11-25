@@ -3,6 +3,8 @@ import { Easing, interpolate, useCurrentFrame } from "remotion";
 import { Canvas, font, stage, W, H, type Theme } from "../theme.ts";
 import { useIn, type VisualProps } from "./common.tsx";
 import { saidAt, tickAt } from "../mono.ts";
+import { Group } from "three";
+import { figure3d, rig } from "./Figure3D.tsx";
 
 // Motivation style: glowing monochrome stick figures, always moving.
 
@@ -120,10 +122,14 @@ export function Figure({ x, y = 0, ground, air = 0, s = 1, pose, hands, front = 
   // Body and hood are drawn upright in their own frame (up = -y), then rotated to the torso / neck direction.
   const deg = (v: Pt) => (Math.atan2(v[0], -v[1]) * 180) / Math.PI;
   const len = Math.hypot(j.sh[0], j.sh[1]) || 1;
+  // The body is the 3D rig (remotion/components/Figure3D.tsx), same skeleton and placement; FIGURE_3D=0 in the render
+  // env (server/bots/remotion.ts envVariables) brings back the flat SVG drawing below.
+  const img = process.env.FIGURE_3D !== "0" ? figure3d(j, trail.map((tp) => joints(tp, facing, headDown, hands)), front ? "front" : away ? "back" : "side", color, back, s) : null;
   return (
     <>
       {ground !== undefined && <ellipse cx={x} cy={ground + 6} rx={70 * s} ry={11 * s} fill="#fff" opacity={0.12 * Math.max(0, 1 - air / 80)} />}
       <g transform={`translate(${x} ${hy}) scale(${flip ? -s : s} ${s})`} filter={glow ? "url(#glow)" : undefined}>
+        {img ? <image href={img.href} x={img.x} y={img.y} width={img.w} height={img.h} /> : <>
         {trail.map((tp, i) => {
           const g = joints(tp, facing, headDown, hands);
           return (
@@ -148,9 +154,23 @@ export function Figure({ x, y = 0, ground, air = 0, s = 1, pose, hands, front = 
         </g>
         {limb(j.legR, color)}
         {limb(j.armR, color)}
+        </>}
       </g>
     </>
   );
+}
+
+// The character as a three.js object for a <Three> scene: feet on y = 0, facing +x, about 480 units tall at scale 1.
+// Pose it like Figure; place, turn (rotation.y) and scale it like any object. Walking without sliding: move it
+// walkRate(amp) * scale per unit of phase, along the way it faces.
+export function hooded({ pose = STAND, headDown = 0, hands, color = "#ececec" }: { pose?: Pose; headDown?: number; hands?: [Pt, Pt]; color?: string } = {}) {
+  const j = joints(pose, false, headDown, hands);
+  const lowest = Math.max(j.legL[2][1], j.legL[3][1], j.legR[2][1], j.legR[3][1]) + LIMB / 2;
+  const body = rig(j, "side", color, color === "#ececec" ? "#a9a9a9" : color);
+  body.position.y = lowest;
+  const g = new Group();
+  g.add(body);
+  return g;
 }
 
 // The hoodie and hood are flat, rounded shapes with soft shading (the far side and the back darker, a highlight on

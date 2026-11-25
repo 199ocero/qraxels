@@ -16,7 +16,7 @@ export const drawPath = (id: string, i: number) => dir(id, "draw", `scene-${Stri
 export const toJs = (tsx: string) => transformSync(tsx, { loader: "tsx", format: "cjs", jsx: "automatic", target: "es2022" }).code;
 
 // Mirrors remotion/drawn.tsx IMPORTS (that file pulls in the Remotion runtime, so it isn't imported here).
-const IMPORTS = ["react", "react/jsx-runtime", "remotion", "kit"];
+const IMPORTS = ["react", "react/jsx-runtime", "remotion", "three", "kit"];
 
 // Problems that would make the drawing crash or vary between frames; empty when it's fine.
 export function checkDrawing(code: string): string[] {
@@ -29,6 +29,7 @@ export function checkDrawing(code: string): string[] {
   for (const [, m] of code.matchAll(/from\s+["']([^"']+)["']/g)) if (!IMPORTS.includes(m)) out.push(`it imports "${m}"; only ${IMPORTS.join(", ")} are available`);
   if (/Math\.random|Date\.now|new Date/.test(code)) out.push("it uses Math.random or the clock; every frame must be a pure function of useCurrentFrame()");
   if (/(?<![.\w])(pop|ease|clamp)\s*\(/.test(code)) out.push("it calls pop, ease or clamp as a function; they're interpolate options objects, passed as k01's 4th argument: k01(f, a, b, pop)");
+  if (/WebGLRenderer|useFrame|requestAnimationFrame|<Canvas\b/.test(code)) out.push("it renders three.js itself; build a THREE.Scene and camera each frame and draw them with <Three box scene camera /> from the kit");
   if (!/export\s+default/.test(code)) out.push("it has no `export default` component");
   // A home-made stage() is fixed to one canvas; the kit's follows the one the drawing plays on.
   if (/function\s+stage\s*\(|(const|let|var)\s+stage\s*=/.test(code)) out.push('it defines its own stage(); import stage from "kit" instead (it changes with the canvas)');
@@ -84,7 +85,8 @@ export async function drawScenes(state: State, v: VoicedScenes, todo: { i: numbe
         // Opus: drew cleaner, more believable scenes than Sonnet in a side-by-side test (~80 drawings per long video, so it costs more).
         model: OPUS,
         // Long videos are drawn for the wide 1920x1080 canvas (prompts/draw-long.md).
-        prompt: fill("draw", vars, note, ...(state.layout === "long" ? ["long"] : [])),
+        // Scenes the director marked in3d also get the 3D kit (prompts/draw-3d.md).
+        prompt: fill("draw", vars, note, ...(state.layout === "long" ? ["long"] : [])) + (s.in3d ? `\n${fill("draw-3d", vars)}` : ""),
         schema: Drawing.superRefine((x, ctx) => checkDrawing(x.code).forEach((message) => ctx.addIssue({ code: "custom", path: ["code"], message }))),
         signal,
       });

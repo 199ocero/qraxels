@@ -142,6 +142,8 @@ export const Scene = z
     // Calm styles: this scene's own picture, drawn fresh for it (server/bots/draw.ts). The component and props
     // below are the fallback when there's no shot or the drawing fails.
     shot: z.string().min(1).max(400).optional(),
+    // The director's call: draw this shot as a three.js scene (prompts/draw-3d.md) rather than flat SVG.
+    in3d: z.boolean().optional(),
     speed: z.number().min(0.8).max(1.25).default(1),
     pause_after: z.number().min(0).max(1.5).default(0.3),
     // Motivation style: the word that gets a hit (punch + flash + shake), a scene sound, a camera move.

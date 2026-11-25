@@ -516,6 +516,10 @@ test("calm styles: library pictures once and only where they fit, the rest drawn
   assert.match(checkDrawing(ok.replace("<circle", "<circle <")).join(), /doesn't compile/);
   assert.match(checkDrawing(ok.replace("f}", "pop(f)}")).join(), /calls pop/);
   assert.deepEqual(checkDrawing(ok.replace("f}", "Easing.ease(f)}")), []);
+  // 3D scenes (prompts/draw-3d.md): three is importable, but the kit's <Three> does the rendering.
+  const three = `import * as THREE from "three";\n${ok}`;
+  assert.deepEqual(checkDrawing(three), []);
+  assert.match(checkDrawing(three.replace("f}", "new THREE.WebGLRenderer() && f}")).join(), /renders three.js itself/);
 });
 
 test("long videos: chapters planned apart, clashes blamed on the later chapter, stitched into one plan", async () => {
