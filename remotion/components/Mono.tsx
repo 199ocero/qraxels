@@ -124,7 +124,7 @@ export function Figure({ x, y = 0, ground, air = 0, s = 1, pose, hands, front = 
   const len = Math.hypot(j.sh[0], j.sh[1]) || 1;
   // The body is the 3D rig (remotion/components/Figure3D.tsx), same skeleton and placement; FIGURE_3D=0 in the render
   // env (server/bots/remotion.ts envVariables) brings back the flat SVG drawing below.
-  const img = process.env.FIGURE_3D !== "0" ? figure3d(j, trail.map((tp) => joints(tp, facing, headDown, hands)), front ? "front" : away ? "back" : "side", color, back, s) : null;
+  const img = process.env.FIGURE_3D !== "0" ? figure3d(j, trail.map((tp) => joints(tp, facing, headDown, hands)), front ? "front" : away ? "back" : "side", color, back, s, !!hands) : null;
   return (
     <>
       {ground !== undefined && <ellipse cx={x} cy={ground + 6} rx={70 * s} ry={11 * s} fill="#fff" opacity={0.12 * Math.max(0, 1 - air / 80)} />}

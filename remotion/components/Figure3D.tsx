@@ -68,18 +68,20 @@ function limb(g: THREE.Group, [a, k, e, toe]: Pt[], z: number, mat: THREE.Materi
 }
 
 // The character from its 2D skeleton (hip at the origin, three's y-up), facing +x in the side view.
-export function rig(j: Joints, view: View, color: string, back: string, opacity = 1, limbsOnly = false) {
+export function rig(j: Joints, view: View, color: string, back: string, opacity = 1, limbsOnly = false, pinned = false) {
   const root = new THREE.Group();
   const near = toon(color, opacity);
   const far = toon(back, opacity);
   const trim = toon(new THREE.Color(color).multiplyScalar(0.62), opacity);
   const side = view === "side";
-  // Side view: arms just outside the body's 100-deep sides, near ones toward the camera. Facing views spread them in x
-  // already, so the arms come forward to lie over the body as the SVG draws them (inside it, only the hands showed).
-  limb(root, j.armL, side ? -56 : 54, far);
+  // Arms hang from the hoodie's sides. Side view: just outside its 100-deep sides, the near one toward the camera.
+  // Facing views: the skeleton's shoulders (26 from the centre) are inside the 100-wide body, so the arm moves out 32
+  // to the body's edge; a pinned hand (IK grip on a bar or rope) stays put and only the shoulder and elbow move.
+  const out = (pts: Pt[], dx: number): Pt[] => (side ? pts : pts.map((p, i) => (pinned && i === 2 ? p : [p[0] + dx, p[1]])));
+  limb(root, out(j.armL, -32), side ? -56 : 0, far);
   limb(root, j.legL, side ? -22 : 0, far);
   limb(root, j.legR, side ? 22 : 0, near);
-  limb(root, j.armR, side ? 56 : 54, near);
+  limb(root, out(j.armR, 32), side ? 56 : 0, near);
   if (limbsOnly) return root;
 
   // Hoodie, in the torso's frame (hip at the origin, up along the torso), with its front pocket and drawstrings.
@@ -148,9 +150,9 @@ export function snap(scene: THREE.Scene, cam: THREE.Camera, w: number, h: number
 }
 
 // The SVG Figure's body as an image covering x, y, w, h in its local units (hip at 0,0, y down). `s` sets resolution.
-export function figure3d(j: Joints, trail: Joints[], view: View, color: string, back: string, s: number): Img {
-  const px = Math.min(2, Math.max(0.6, s * 2)); // pixels per local unit
-  const key = JSON.stringify([j, trail, view, color, back, px.toFixed(2)]);
+export function figure3d(j: Joints, trail: Joints[], view: View, color: string, back: string, s: number, pinned = false): Img {
+  const px = Math.min(4, Math.max(0.6, s * 2)); // pixels per local unit: 2x oversampled, up to a 2x figure (covers, avatar)
+  const key = JSON.stringify([j, trail, view, color, back, px.toFixed(2), pinned]);
   const hit = cache.get(key);
   if (hit) return hit;
 
@@ -164,8 +166,8 @@ export function figure3d(j: Joints, trail: Joints[], view: View, color: string, 
   const scene = new THREE.Scene();
   const world = new THREE.Group();
   world.rotation.y = YAW[view];
-  trail.forEach((g, i) => world.add(rig(g, view, back, back, 0.2 / (i + 1), true)));
-  world.add(rig(j, view, color, back));
+  trail.forEach((g, i) => world.add(rig(g, view, back, back, 0.2 / (i + 1), true, pinned)));
+  world.add(rig(j, view, color, back, 1, false, pinned));
   scene.add(world);
   const cam = new THREE.OrthographicCamera(x, x + w, -y, -(y + h), 1, 4000);
   cam.position.z = 2000;

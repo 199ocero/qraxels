@@ -38,8 +38,9 @@ export function Backdrop({ w, h }: { w: number; h: number }) {
   );
 }
 
-// The mascot, front-facing, standing on y=0 at x=0 (unit scale: about 430 px tall).
-const Mascot = ({ pose = STAND }: { pose?: typeof STAND }) => <Figure x={0} ground={0} pose={pose} front />;
+// The mascot, front-facing, feet on `ground` (scale 1: about 430 px tall). Scaled through `s`, not an outer transform,
+// so the 3D figure renders at the size it's shown (sharp at 3x in the avatar).
+const Mascot = ({ x, ground, s = 1, pose = STAND }: { x: number; ground: number; s?: number; pose?: typeof STAND }) => <Figure x={x} ground={ground} s={s} pose={pose} front />;
 
 function Avatar({ size }: { size: number }) {
   const k = size / 800;
@@ -48,7 +49,7 @@ function Avatar({ size }: { size: number }) {
       <Defs />
       <Backdrop w={800} h={800} />
       {/* Head and chest fill the circle crop; legs fall off the bottom. */}
-      <g transform="translate(375 1480) scale(3)"><Mascot /></g>
+      <Mascot x={375} ground={1480} s={3} />
       <circle cx={400} cy={400} r={392} fill="none" stroke="#fff" strokeOpacity={0.18} strokeWidth={4 / k} />
     </svg>
   );
@@ -84,7 +85,7 @@ export function YouTubeBanner() {
       <Backdrop w={W} h={H} />
       <Floor w={W} y={gy} h={H - gy} />
       {/* Everything that matters sits in the 1546x423 centre (x 507-2053, y 508-931). */}
-      <g transform={`translate(${W / 2 - 560} ${gy - 18}) scale(0.95)`}><Mascot /></g>
+      <Mascot x={W / 2 - 560} ground={gy - 18} s={0.95} />
       <Wordmark x={W / 2 - 360} y={H / 2 + 50} size={230} />
     </svg>
   );
@@ -98,7 +99,7 @@ export function FacebookCover() {
       <Backdrop w={W} h={H} />
       <Floor w={W} y={gy} h={H - gy} />
       {/* Bottom-left is covered by the page avatar, and mobile crops the sides: keep it right of centre. */}
-      <g transform={`translate(${W / 2 - 330} ${gy}) scale(0.95)`}><Mascot /></g>
+      <Mascot x={W / 2 - 330} ground={gy} s={0.95} />
       <Wordmark x={W / 2 - 150} y={330} size={190} />
     </svg>
   );
