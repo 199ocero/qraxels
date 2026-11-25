@@ -85,7 +85,7 @@ export function YouTubeBanner() {
       <Backdrop w={W} h={H} />
       <Floor w={W} y={gy} h={H - gy} />
       {/* Everything that matters sits in the 1546x423 centre (x 507-2053, y 508-931). */}
-      <Mascot x={W / 2 - 560} ground={gy - 18} s={0.95} />
+      <Mascot x={W / 2 - 560} ground={gy - 18} s={0.8} />
       <Wordmark x={W / 2 - 360} y={H / 2 + 50} size={230} />
     </svg>
   );
