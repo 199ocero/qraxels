@@ -177,7 +177,7 @@ export function paletteFor(n: number, seed: number) {
 // The component list the director sees, trimmed to what suits the style (a smaller prompt, and pictures that fit):
 // "built" videos skip the motivation sets, the others skip the history set. Sections run from a header line
 // ("Money and work:") to the next one.
-const SKIP: Record<string, string[]> = { built: ["Money and work:", "Mind and habits:", "Action and struggle:"], other: ["History and engineering"] };
+const SKIP: Record<string, string[]> = { built: ["Money and work:", "Economy and prices:", "Mind and habits:", "Action and struggle:"], other: ["History and engineering"] };
 export function componentsFor(md: string, layout: string): string {
   const skip = SKIP[layout === "built" ? "built" : "other"];
   let drop = false;
@@ -192,18 +192,23 @@ export function componentsFor(md: string, layout: string): string {
 
 const normShot = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
-// The calm styles show a library picture only once per video and draw everything else from its shot, so no scene is
-// the same stock picture with a new label. `shown`: label-only pictures the last videos showed, drawn instead too.
-export function calmIssues(scenes: { component: string; shot?: string }[], shown = new Set<string>(), most = 2): string[] {
+// Drawings are the costly part of a video (one Opus call each), so at most this share of a plan's scenes is drawn.
+export const DRAWN_SHARE = 1 / 3;
+
+// The calm styles show a library picture only once per video and draw the rest from its shot, so no scene is the same
+// stock picture with a new label. The last video's pictures are only a preference (in the prompt), never a hard
+// check, so a narrow topic can't fail planning by running out of fresh pictures.
+// `share`: the most of these scenes that may be drawn (1 = no cap).
+export function calmIssues(scenes: { component: string; shot?: string }[], most = 2, share = 1): string[] {
   const out: string[] = [];
   const shots = scenes.flatMap((s) => (s.shot ? [normShot(s.shot)] : []));
+  const cap = Math.ceil(scenes.length * share);
+  if (shots.length > cap) out.push(`too many drawn scenes: ${shots.length} of ${scenes.length} have a shot, at most ${cap} may; keep shots for the moments no library picture can show and use the closest library picture (no shot) for the rest`);
   const dup = shots.filter((x, i) => shots.indexOf(x) !== i);
   if (dup.length) out.push(`these shots repeat; every scene needs its own picture: ${[...new Set(dup)].map((d) => `"${d.slice(0, 60)}"`).join(", ")}`);
   const lib = scenes.filter((s) => !s.shot).map((s) => s.component);
   const again = [...new Set(lib.filter((c, i) => lib.indexOf(c) !== i))];
-  if (again.length) out.push(`each library picture at most once; write a shot for the other scenes that use: ${again.join(", ")}`);
-  const stale = [...new Set(lib.filter((c) => shown.has(c)))];
-  if (stale.length) out.push(`the last videos already showed ${stale.join(", ")}; write a shot for those scenes instead`);
+  if (again.length) out.push(`each library picture at most once; pick another library picture (or a shot, within the drawing cap) for the other scenes that use: ${again.join(", ")}`);
   const counts = new Map<string, number>();
   for (const s of scenes) counts.set(s.component, (counts.get(s.component) ?? 0) + 1);
   const over = [...counts].filter(([, n]) => n > most).map(([c, n]) => `${c} (${n}x)`);
@@ -237,7 +242,7 @@ export function chapterClashes(parts: { component: string; shot?: string }[][], 
       const [seen, key] = x.shot ? [shots, normShot(x.shot)] : [lib, x.component];
       const j = seen.get(key);
       if (j === undefined) seen.set(key, k);
-      else if (j !== k) bad.add(x.shot ? `your shot "${x.shot.slice(0, 60)}" repeats one in chapter ${j + 1}; draw a new picture` : `chapter ${j + 1} already shows the library picture ${x.component}; write a shot for that scene instead`);
+      else if (j !== k) bad.add(x.shot ? `your shot "${x.shot.slice(0, 60)}" repeats one in chapter ${j + 1}; draw a new picture` : `chapter ${j + 1} already shows the library picture ${x.component}; pick another library picture (or a shot, within the drawing cap) for that scene`);
       const n = (counts.get(x.component) ?? 0) + 1;
       counts.set(x.component, n);
       if (n > most) bad.add(`${x.component} is already used ${most} times in the chapters before yours (counting fallbacks); pick other components`);
@@ -273,7 +278,7 @@ export function stitch(parts: Scene[][]): Scene[] {
 
 // Long videos: one director call per chapter, all at once, stitched in order. A chapter that clashes with an
 // earlier one (a repeated shot or picture, a component over 3 times) is planned again on its own, seeing the others.
-async function longScenes(s: Script, vars: Record<string, string>, pal: ReturnType<typeof paletteFor>, shown: Set<string>, note: string | undefined, activity: (l: string) => void, signal: AbortSignal): Promise<Scenes> {
+async function longScenes(s: Script, vars: Record<string, string>, pal: ReturnType<typeof paletteFor>, note: string | undefined, activity: (l: string) => void, signal: AbortSignal): Promise<Scenes> {
   const titles = chaptersOf(s);
   const n = titles.length;
   const [hits, sfx] = [spread(6, n), spread(4, n)];
@@ -296,7 +301,7 @@ async function longScenes(s: Script, vars: Record<string, string>, pal: ReturnTy
       schema: Scenes.superRefine((x, ctx) => {
         const bad = (message: string) => ctx.addIssue({ code: "custom", path: ["scenes"], message });
         if (norm(x.scenes.map((y) => y.narration).join(" ")).join(" ") !== norm(said(k)).join(" ")) bad("your scenes must hold exactly this chapter's narration, word for word, in order");
-        calmIssues(x.scenes, shown, 3).forEach(bad);
+        calmIssues(x.scenes, 3, DRAWN_SHARE).forEach(bad);
         const c = x.scenes.map((y) => y.component);
         if (k === 0 && c[0] !== pal.open) bad(`the first scene must be ${pal.open}`);
         if (k === n - 1 && c.at(-1) !== pal.close) bad(`the last scene must be ${pal.close}`);
@@ -324,7 +329,7 @@ async function longScenes(s: Script, vars: Record<string, string>, pal: ReturnTy
   }
   const scenes = stitch(parts);
   // The stitched video must pass the same checks a one-call plan did.
-  const issues = [...calmIssues(scenes, shown, 3), ...chapterIssues(s, scenes)];
+  const issues = [...calmIssues(scenes, 3), ...chapterIssues(s, scenes)];
   if (issues.length) throw new Error(`the stitched plan has problems: ${issues.join("; ").slice(0, 500)}`);
   return { scenes };
 }
@@ -334,9 +339,10 @@ export const scenes: Job = async ({ state, note, activity, signal }) => {
   const lastPlans = pastMono(state, "scenes.json").slice(-3).map((p) => readJson<Scenes>(dir(p.id, "scenes.json")).scenes);
   const recent = lastPlans.map((x) => `- ${x.map((y) => y.component).join(" → ")}`);
   // Label-only pictures (the same drawing every time) the last videos put on screen; scenes with data props differ each time.
-  const shown = new Set(lastPlans.flat().filter((y) => !y.shot && (LABELED as readonly string[]).includes(y.component)).map((y) => y.component));
+  // Only the last video: with most scenes from the library, banning the last 3 videos' pictures would empty it.
+  const shown = new Set(lastPlans.slice(-1).flat().filter((y) => !y.shot && (LABELED as readonly string[]).includes(y.component)).map((y) => y.component));
   const calm = state.layout !== "mono";
-  const recentText = [recent.length ? `Scene orders of the last videos (don't follow the same order):\n${recent.join("\n")}\n` : "", calm && shown.size ? `Shown in the last videos (draw these moments instead): ${[...shown].join(", ")}\n` : ""].join("");
+  const recentText = [recent.length ? `Scene orders of the last videos (don't follow the same order):\n${recent.join("\n")}\n` : "", calm && shown.size ? `Shown in the last video (avoid these when another picture works): ${[...shown].join(", ")}\n` : ""].join("");
   // A "built" video's pictures come from its subject (the structure, its parts and tools), never a fixed rotation.
   const built = state.layout === "built";
   const pal = paletteFor(pastMono(state, "state.json").length, seedOf(state.id));
@@ -344,13 +350,13 @@ export const scenes: Job = async ({ state, note, activity, signal }) => {
     ? `This video's look: open on the structure or object itself and end on it finished or still standing. Prefer the history and engineering pictures; use a Timeline when the script moves through dates. Workout scenes (${GYM.join(", ")}): none.\n`
     : `This video's look (so it doesn't cut like the last ones):\n- FIRST scene: ${pal.open}\n- LAST scene: ${pal.close}\n- Feature at least 4 of: ${pal.featured.join(", ")}\n- Workout scenes (${GYM.join(", ")}): at most 2 in the whole video.\n`;
   const vars = { topic: state.topic, script: JSON.stringify(s, null, 1), palette, components: componentsFor(readFileSync(join(ROOT, "prompts", "components.md"), "utf8"), state.layout), recent: recentText };
-  const out = state.layout === "long" ? await longScenes(s, vars, pal, shown, note, activity, signal) : await runClaude({
+  const out = state.layout === "long" ? await longScenes(s, vars, pal, note, activity, signal) : await runClaude({
     model: OPUS,
     prompt: fill("scenes", vars, note, ...variantsOf(state)),
     schema: Scenes.superRefine((x, ctx) => {
       const c = x.scenes.map((y) => y.component);
       const bad = (message: string) => ctx.addIssue({ code: "custom", path: ["scenes"], message });
-      if (calm) calmIssues(x.scenes, shown).forEach(bad);
+      if (calm) calmIssues(x.scenes, 2, DRAWN_SHARE).forEach(bad);
       if (built) {
         if (c.some((y) => GYM.includes(y))) bad(`no workout scenes (${GYM.join(", ")})`);
         return;

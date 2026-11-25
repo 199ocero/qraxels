@@ -79,6 +79,65 @@ Money and work:
 - Trophy: a trophy rises on a pedestal and gleams. Achievement, the prize.
 - Podium: the figure steps up onto first place, confetti falls. Winning, beating competition.
 - Lottery: a scratch ticket is scratched: TRY AGAIN. Waiting for luck, false hope.
+Economy and prices (energy, food, housing, rates, trade, AI and jobs; for money and economy explainers):
+- GasPump: a gas pump: dollars and gallons spin up, the price per gallon on top jumps. Gas prices, filling up, energy costs.
+- Cart: groceries drop one by one into a cart while the total above climbs. Grocery bills, food inflation, the weekly shop.
+- Feast: a holiday table around a roast turkey, the price tag over it climbing. Thanksgiving, holiday meals, food prices.
+- PowerMeter: an electric meter: its disc spins faster and faster, the kWh count races up. Electricity use, energy demand.
+- Pylons: power lines carry pulses of current past a dimming house into a glowing data centre. The grid, power going to AI, who gets the electricity.
+- Servers: data-centre racks blink and hum, heat shimmering up off them. AI data centres, computing, cloud.
+- Truck: a diesel truck rolls down the road while its fuel gauge sinks to empty. Diesel, freight, shipping costs, trucking.
+- Barrel: an oil barrel, its price per barrel climbing beside a rising arrow. Oil prices, crude, energy shocks.
+- Port: a port crane lifts a shipping container off a ship onto the dock stack. Imports, trade, global shipping.
+- Toll: a container stops at a TARIFF gate; coins walk off the buyer's stack into the booth before the bar lifts. Tariffs, who pays, import taxes.
+- RateDial: a big gauge in percent: the needle climbs from 3 to 7 and the readout follows. Interest rates, mortgage rates, inflation rate.
+- CentralBank: a columned central bank; behind it the rate line steps up and up. The Fed, rate hikes, monetary policy.
+- ForSale: a house with a FOR SALE sign; the asking price keeps dropping and a tumbleweed rolls past. Falling home prices, no buyers, a frozen market.
+- Mortgage: a house key hangs from a % balloon that swells and rises out of the figure's reach. Mortgage rates, affordability, priced out.
+- Gold: gold bars stack into a pyramid while the price per ounce counts past $5,000. Gold, safe havens, fear in markets.
+- SaleMonth: November on a calendar: day after day lights up SALE until the whole month is one. Black Friday stretched out, endless sales.
+- Doorbuster: a crowd waits at a store's closed doors; they slide open, light floods out, the crowd surges in. Black Friday, doorbusters, shopping rush.
+- Assistant: a phone chat: you ask, the assistant thinks, answers with one product, the cart fills. AI shopping assistants, recommendations, chatbots.
+- Appetite: an injection pen clicks once; the heaped plate beside it shrinks to a small portion. Ozempic, GLP-1 drugs, eating less.
+- Layoff: the figure walks out of the office carrying a box of their things while a screen marked AI lights up. Layoffs, AI replacing jobs, AI-washing.
+- Spillover: one price jumps and rings ripple out; every tag around it ticks up in turn. Knock-on costs, one price raising all the others.
+- Shrink: a product box shrinks inside the outline of its old size while its price tag stays the same. Shrinkflation, paying the same for less.
+- Vise: a wallet squeezed in a bench vise: the jaws close, coins pop out. Squeezed budgets, cost of living.
+- Supply: factory, ship, truck, store: a box travels the chain and picks up a cost at every stop. Supply chains, how costs add up, where prices come from.
+- Dollar: a dollar bill shrinks inside the outline of what it used to be, its worth in cents falling. Inflation, purchasing power, the dollar buying less.
+- PowerBill: an envelope opens and the electric bill slides out; the amount due keeps climbing. Utility bills, rising electricity costs.
+- Strait: a tanker sails through a narrow strait; a barrier drops across it and the OIL arrow shoots up. Shipping chokepoints, war and oil supply, supply shocks.
+- Parcels: parcels drop onto a doorstep one after another and pile up against the door. Online shopping, deliveries, spending sprees.
+- Funnel: a crowd of products pours into a funnel; one glowing pick comes out the bottom. Choices narrowed for you, algorithms, AI deciding what you buy.
+- Queue: a line outside an office door keeps getting longer as more people walk up. Unemployment, job hunting, layoffs adding up.
+- Robot: a boxy robot slides into the desk chair and starts typing; the figure is left standing beside it. AI taking over work, automation.
+- Snacks: a vending machine full of snacks empties row by row. People buying fewer snacks, changing diets, falling sales.
+- Race: two bars race upward, PAY and PRICES; prices pull ahead and the gap opens. Wages vs inflation, falling behind.
+- Valve: coins flow through a pipe; a big valve wheel turns and the flow slows to a trickle. The Fed tightening, money getting scarce, credit drying up.
+- Squeeze: a heavy PRICES weight lands on a stack of bills; the stack sinks and cracks. The pressure of high prices, household budgets.
+- Flood: the figure stands on the top step while PRICES water rises up the steps below. Inflation outpacing raises, keeping your head above water.
+- TwoPrices: two shoppers look at the same product; one tag stays at $12, the other jumps to $18. Surveillance pricing, personalised prices, different prices for different people.
+- Profile: dots of data stream off a phone into a profile card that fills row by row, then $$$ appears. Data tracking, what stores know about you, pricing from your data.
+- Watching: a security camera swivels to follow the figure down the aisle; when they stop, the shelf price ticks up. Being watched while you shop, surveillance pricing.
+- ShelfLabel: an electronic shelf label whose price flickers and changes again and again. Digital price tags, dynamic pricing, prices changing by the hour.
+- MenuBoard: a menu board: one sandwich disappears (GONE), the slot sits empty, then it slides back in under a starburst (BACK). Limited-time items, the menu item that keeps returning, scarcity marketing.
+- DriveThru: a drive-thru window glows while cars keep rolling up and the line stretches back. Fast-food demand, hype, everyone lining up for it.
+- Limited: a sandwich under a countdown ring draining away, days left ticking down to zero. Limited time only, FOMO, artificial scarcity.
+- Hog: a pig on a scale while the price per pound underneath slides down. Pork prices, commodity costs, cheap ingredients deciding the menu.
+- TopTen: ten people in a row; the last one rises onto a pedestal and lights up, TOP 10%. Top earners, income percentiles, where you rank.
+- AgeCurve: income by age: a curve climbs from 25 to its peak around 50 and a dot rides along it. Earnings by age, career peak, where you should be by now.
+- Distribution: an income histogram rises bar by bar, then the far-right tail lights up behind a dashed line, TOP 10%. Income distribution, how rare high earners are.
+- ThenNow: THEN and NOW panels of the same item: the old price sits still, the new one counts up. Price-hike comparisons, this used to cost X.
+- Receipts: two receipts for the same basket: the old one short, the new one keeps printing and its total climbs. Same groceries cost more, inflation over the years.
+- Sticker: a price tag gets a new sticker slapped over the old one, again and again, each higher. Repeated price hikes, prices going up and up.
+- Thermostat: a thermostat holds 72° while the dollars under it keep climbing. Higher energy bills for the same comfort, heating and cooling costs.
+- LockedIn: a house with a padlock marked 3% on its door while a rate sign across the street climbs to 7%. Rate lock-in, owners who won't sell, frozen housing market.
+- HandOff: a TARIFF tag hops from a container to the store, then onto the shopper, who sags. Tariff pass-through, who really pays, costs passed to consumers.
+- ForYou: a phone feed of product cards scrolls; one stops under a glowing FOR YOU banner. Algorithmic recommendations, AI picking what you see.
+- Memo: a company memo slides in, an AI stamp thumps onto it and the names are struck out one by one. AI blamed for layoffs, corporate restructuring, AI-washing.
+- Tractor: a tractor ploughs the field puffing diesel while the price per gallon above it rises. Diesel on farms, fuel costs feeding into food prices.
+- BathScale: the figure stands on a bathroom scale while the number drops week by week. Weight loss, GLP-1 drugs, Ozempic results.
+- WasNow: a sale tag: WAS $199 is struck through and NOW $99 pops. Discounts, anchor prices, fake sales, the deal that hooks you.
 Mind and habits:
 - Brain: a brain lights up, sparks racing along its folds. Thinking, learning, mindset.
 - Cloud: a storm cloud rains only on the figure, then clears to sun. Negative thoughts, a dark mood lifting.

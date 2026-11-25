@@ -92,8 +92,9 @@ function joints(pose: Pose, front: boolean, headDown: number, hands?: [Pt, Pt]) 
   return {
     sh,
     head,
-    armL: arm([sh[0] - w, sh[1]], pose.ls, pose.le, hands?.[0], front ? -1 : 1),
-    armR: arm([sh[0] + w, sh[1]], pose.rs, pose.re, hands?.[1], 1),
+    // Facing the camera, both arms open outward (a pose's forward/back angles become sideways), so raised arms make a V.
+    armL: arm([sh[0] - w, sh[1]], front ? -Math.abs(pose.ls) : pose.ls, front ? -Math.abs(pose.le) : pose.le, hands?.[0], front ? -1 : 1),
+    armR: arm([sh[0] + w, sh[1]], front ? Math.abs(pose.rs) : pose.rs, front ? Math.abs(pose.re) : pose.re, hands?.[1], 1),
     legL: leg([-w * 0.6, 0], pose.lh, pose.lk, -1),
     legR: leg([w * 0.6, 0], pose.rh, pose.rk, 1),
   };
@@ -136,30 +137,14 @@ export function Figure({ x, y = 0, ground, air = 0, s = 1, pose, hands, front = 
         })}
         {limb(j.armL, back)}
         {limb(j.legL, back)}
-        {/* Hoodie body: a 3D box; pocket and drawstrings on the front, a hem from behind, thinner in profile. */}
+        {/* Hoodie body, drawn upright in the torso's frame. Lit from the front: the far side is shaded. */}
         <g transform={`rotate(${deg(j.sh)})`}>
-          <Box x0={facing ? -48 : -36} y0={-len - 16} x1={facing ? 48 : 36} y1={12} r={10} color={color} />
-          {front && <path d={`M -30 -40 H 30 L 36 0 H -36 Z`} fill="none" stroke="#000" strokeOpacity={0.35} strokeWidth={4} strokeLinejoin="round" />}
-          {front && [-12, 12].map((x) => <line key={x} x1={x} y1={-len - 8} x2={x * 1.2} y2={-len + 34} stroke="#000" strokeOpacity={0.35} strokeWidth={4} strokeLinecap="round" />)}
-          {away && <line x1={-44} y1={-6} x2={44} y2={-6} stroke="#000" strokeOpacity={0.3} strokeWidth={4} />}
+          <Hoodie len={len} view={front ? "front" : away ? "back" : "side"} color={color} />
         </g>
-        {/* Hood up, a 3D box. Front: dark face opening, two glowing eyes. Side: the opening on the forward edge, one eye.
+        {/* Hood up. Front: dark face opening, two glowing eyes. Side: the opening on the forward edge, one eye.
             Back: no face, just the hood's centre seam. */}
         <g transform={`translate(${j.head[0]} ${j.head[1]}) rotate(${deg([j.head[0] - j.sh[0], j.head[1] - j.sh[1]])})`}>
-          <Box x0={-52} y0={-54} x1={52} y1={46} r={18} color={color} />
-          {front && (
-            <>
-              <rect x={-36} y={-34} width={72} height={66} rx={12} fill="#050505" />
-              {[-14, 14].map((ex) => <rect key={ex} x={ex - 7} y={-8} width={14} height={9} rx={4} fill="#fff" filter="url(#eyeglow)" />)}
-            </>
-          )}
-          {!facing && (
-            <>
-              <path d="M 52 -32 H 24 Q 6 -4 24 26 H 52 Z" fill="#050505" />
-              <rect x={34} y={-9} width={12} height={9} rx={4} fill="#fff" filter="url(#eyeglow)" />
-            </>
-          )}
-          {away && <path d="M 0 -54 V -6" stroke="#000" strokeOpacity={0.3} strokeWidth={4} strokeLinecap="round" />}
+          <Hood view={front ? "front" : away ? "back" : "side"} color={color} />
         </g>
         {limb(j.legR, color)}
         {limb(j.armR, color)}
@@ -168,19 +153,66 @@ export function Figure({ x, y = 0, ground, air = 0, s = 1, pose, hands, front = 
   );
 }
 
-// A rounded box with a lit top face and a shaded side face, so the hoodie and hood read as 3D.
-const DEPTH: Pt = [16, -14];
-function Box({ x0, y0, x1, y1, r, color }: { x0: number; y0: number; x1: number; y1: number; r: number; color: string }) {
-  const [dx, dy] = DEPTH;
-  const top = `M ${x0 + r} ${y0} L ${x0 + r + dx} ${y0 + dy} H ${x1 + dx - r * 0.3} L ${x1 + dx} ${y0 + dy + r * 0.3} L ${x1} ${y0 + r} V ${y0} Z`;
-  const side = `M ${x1} ${y0 + r} L ${x1 + dx} ${y0 + dy + r * 0.3} V ${y1 + dy - r * 0.3} L ${x1} ${y1 - r} Z`;
+// The hoodie and hood are flat, rounded shapes with soft shading (the far side and the back darker, a highlight on
+// top) so they read as solid in every view and stay consistent when the figure is flipped.
+type View = "side" | "front" | "back";
+const shade = (d: string, o: number) => <path d={d} fill="#000" opacity={o} />;
+
+function Hoodie({ len, view, color }: { len: number; view: View; color: string }) {
+  const top = -len - 22; // rises into the hood so no gap opens when the head turns
+  if (view === "side") {
+    const body = `M -28 ${top} H 24 Q 40 ${top} 40 ${top + 18} L 38 2 Q 38 14 26 14 H -28 Q -40 14 -40 2 L -38 ${top + 18} Q -38 ${top} -28 ${top} Z`;
+    return (
+      <>
+        <path d={body} fill={color} />
+        {shade(`M -28 ${top} H -20 Q -26 ${top + 10} -26 ${top + 22} L -26 14 Q -40 14 -40 2 L -38 ${top + 18} Q -38 ${top} -28 ${top} Z`, 0.12)}
+        <path d={`M 38 -46 Q 20 -42 18 -8`} fill="none" stroke="#000" strokeOpacity={0.28} strokeWidth={4} strokeLinecap="round" />
+        <line x1={-39} y1={-2} x2={38} y2={-2} stroke="#000" strokeOpacity={0.22} strokeWidth={4} />
+      </>
+    );
+  }
+  const body = `M -40 ${top} H 40 Q 52 ${top} 52 ${top + 16} L 46 2 Q 46 14 34 14 H -34 Q -46 14 -46 2 L -52 ${top + 16} Q -52 ${top} -40 ${top} Z`;
   return (
     <>
-      <path d={top} fill={color} />
-      <path d={top} fill="#fff" opacity={0.25} />
-      <path d={side} fill={color} />
-      <path d={side} fill="#000" opacity={0.35} />
-      <rect x={x0} y={y0} width={x1 - x0} height={y1 - y0} rx={r} fill={color} />
+      <path d={body} fill={color} />
+      {shade(`M 32 ${top} H 40 Q 52 ${top} 52 ${top + 16} L 46 2 Q 46 14 34 14 H 28 Q 34 0 34 -30 L 32 ${top} Z`, 0.16)}
+      <line x1={-45} y1={-2} x2={45} y2={-2} stroke="#000" strokeOpacity={0.22} strokeWidth={4} />
+      {view === "front" && <path d={`M -30 -44 H 30 L 36 -4 H -36 Z`} fill="none" stroke="#000" strokeOpacity={0.3} strokeWidth={4} strokeLinejoin="round" />}
+      {view === "front" && [-12, 12].map((x) => <line key={x} x1={x} y1={-len - 8} x2={x * 1.2} y2={-len + 30} stroke="#000" strokeOpacity={0.32} strokeWidth={4} strokeLinecap="round" />)}
+    </>
+  );
+}
+
+function Hood({ view, color }: { view: View; color: string }) {
+  if (view === "side") {
+    const face = "M 55 -40 Q 24 -42 20 -8 Q 22 26 55 28 Z";
+    return (
+      <>
+        <path d="M 54 34 L 55 -26 Q 55 -60 20 -61 L -16 -61 Q -58 -59 -58 -16 L -58 24 Q -58 48 -30 48 L 42 48 Q 54 48 54 34 Z" fill={color} />
+        {shade("M -16 -61 L -8 -61 Q -40 -52 -42 -12 L -42 24 Q -42 42 -22 48 L -30 48 Q -58 48 -58 24 L -58 -16 Q -58 -59 -16 -61 Z", 0.12)}
+        <path d="M -12 -55 Q 18 -59 40 -52" fill="none" stroke="#fff" strokeOpacity={0.5} strokeWidth={5} strokeLinecap="round" />
+        <path d={face} fill="none" stroke="#000" strokeOpacity={0.22} strokeWidth={12} strokeLinejoin="round" />
+        <path d={face} fill="#050505" />
+        <rect x={33} y={-10} width={14} height={10} rx={5} fill="#fff" filter="url(#eyeglow)" />
+      </>
+    );
+  }
+  const outer = "M -48 46 Q -58 46 -58 34 L -58 -22 Q -58 -60 -20 -62 Q 0 -70 20 -62 Q 58 -60 58 -22 L 58 34 Q 58 46 48 46 Z";
+  const face = "M -16 -38 H 16 Q 38 -38 38 -16 V 12 Q 38 34 16 34 H -16 Q -38 34 -38 12 V -16 Q -38 -38 -16 -38 Z";
+  return (
+    <>
+      <path d={outer} fill={color} />
+      {shade("M 40 -57 Q 58 -50 58 -22 L 58 34 Q 58 46 48 46 L 40 46 Q 46 20 46 -10 Q 46 -40 40 -57 Z", 0.16)}
+      <path d="M -36 -56 Q -18 -64 0 -66" fill="none" stroke="#fff" strokeOpacity={0.5} strokeWidth={5} strokeLinecap="round" />
+      {view === "front" ? (
+        <>
+          <path d={face} fill="none" stroke="#000" strokeOpacity={0.22} strokeWidth={12} />
+          <path d={face} fill="#050505" />
+          {[-14, 14].map((ex) => <rect key={ex} x={ex - 7} y={-8} width={14} height={10} rx={5} fill="#fff" filter="url(#eyeglow)" />)}
+        </>
+      ) : (
+        <path d="M 0 -66 V 0" stroke="#000" strokeOpacity={0.28} strokeWidth={4} strokeLinecap="round" />
+      )}
     </>
   );
 }

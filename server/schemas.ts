@@ -61,9 +61,16 @@ export const HISTORY = [
   "Antikythera", "WaterClock", "Loom", "Potter", "Casting", "Pendulum", "Locomotive", "Airship", "Biplane", "Obscura", "Cannon", "SiegeTower", "BatteringRam", "Longship", "Caravan", "Nazca", "Rosetta", "Terracotta", "Mummy", "Shipwreck", "CavePaint", "TreeRings", "HalfLife", "Lidar",
 ] as const;
 
+// Economy and prices pictures (remotion/components/Economy.tsx); label-only too.
+export const ECONOMY = [
+  "GasPump", "Cart", "Feast", "PowerMeter", "Pylons", "Servers", "Truck", "Barrel", "Port", "Toll", "RateDial", "CentralBank", "ForSale", "Mortgage", "Gold", "SaleMonth", "Doorbuster", "Assistant", "Appetite", "Layoff", "Spillover", "Shrink", "Vise", "Supply", "Dollar", "PowerBill", "Strait", "Parcels", "Funnel", "Queue", "Robot", "Snacks", "Race", "Valve", "Squeeze", "Flood",
+  "TwoPrices", "Profile", "Watching", "ShelfLabel", "MenuBoard", "DriveThru", "Limited", "Hog", "TopTen", "AgeCurve", "Distribution", "ThenNow", "Receipts", "Sticker", "Thermostat", "LockedIn", "HandOff", "ForYou", "Memo", "Tractor", "BathScale", "WasNow",
+] as const;
+
 // Picture scenes whose only prop is an optional label (remotion/components/{Money,Mind,Nature,Action,Life,Ancient}.tsx).
 export const LABELED = [
   ...HISTORY,
+  ...ECONOMY,
   "Piggy", "Vault", "Receipt", "Card", "Stacks", "Paycheck", "Cubicle", "Coffee", "Laptop", "Inbox", "Shop", "Deal", "Leak", "Candles", "Dice", "Slots", "BallChain", "Pyramid", "Printer", "Pie", "Magnet", "Faucet", "Meter", "Conveyor", "Gears", "PunchClock", "Tag", "Crown", "Trophy", "Podium", "Lottery",
   "Brain", "Cloud", "Maze", "Book", "Alarm", "Couch", "Pings", "Sleep", "Meditate", "Journal", "Mask", "Shadow", "Cage", "OutBox", "Glass", "Iceberg", "Compass", "Route", "Vision", "Footsteps", "Zone", "Slingshot", "Spring", "Seesaw", "Juggle", "Tightrope", "Fog", "Megaphone", "Pointing", "Puppet",
   "Sunrise", "Moon", "Autumn", "Surf", "Volcano", "Eclipse", "Ridge", "Drip", "Desert", "Snow", "Campfire", "Lighthouse", "Boat", "Anchor", "Island", "Cave", "Sprout", "Bloom", "Cocoon", "Bird", "Upstream", "Waterfall", "Stars", "Wish", "Orbit", "Globe", "Windmill", "Leap", "Sink", "Ice",

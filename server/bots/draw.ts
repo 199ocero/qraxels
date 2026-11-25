@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { transformSync } from "esbuild";
 import { z } from "zod";
 import { ROOT, dir, type State } from "../project.ts";
-import { OPUS, SONNET, runClaude } from "../claude.ts";
+import { OPUS, runClaude } from "../claude.ts";
 import { fill } from "./claude-bots.ts";
 import type { VoicedScenes } from "./voice.ts";
 import type { TallAs } from "../../remotion/Explainer.tsx";
@@ -81,8 +81,8 @@ export async function drawScenes(state: State, v: VoicedScenes, todo: { i: numbe
     const vars = { topic: state.topic, n: String(i + 1), shot: s.shot ?? "", narration: s.narration, secs: secs.toFixed(1), frames: String(Math.round(secs * 30)), words, hit: s.hit ?? "none", label: "label" in s.props && s.props.label ? s.props.label : "none", shots, examples };
     try {
       const out = await runClaude({
-        // Sonnet: ~80 drawings per long video; Opus stays on script, scene direction and review.
-        model: SONNET,
+        // Opus: drew cleaner, more believable scenes than Sonnet in a side-by-side test (~80 drawings per long video, so it costs more).
+        model: OPUS,
         // Long videos are drawn for the wide 1920x1080 canvas (prompts/draw-long.md).
         prompt: fill("draw", vars, note, ...(state.layout === "long" ? ["long"] : [])),
         schema: Drawing.superRefine((x, ctx) => checkDrawing(x.code).forEach((message) => ctx.addIssue({ code: "custom", path: ["code"], message }))),

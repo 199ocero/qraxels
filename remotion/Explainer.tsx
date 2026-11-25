@@ -7,6 +7,7 @@ import { Callout, HookCard } from "./components/Cards.tsx";
 import { Bars, Battery, Boulder, Bridge, Bulb, Fork, Gauge, Jar, Ladder, Lock, Mirror, Puzzle, Storm, Target, Train, Wallet } from "./components/Objects.tsx";
 import { BigWord, Boxing, Bricks, Chains, Dominoes, Hourglass, Rocket, Rush, Scale, Stage, Traffic, Tree, Wheel, Window, Calendar, Car, Cash, Chart, Climb, Clock, Crowd, Door, Fall, Grind, Lift, Phone, Plan, PullUp, RainWalk, Run, Split, Summit } from "./components/Mono.tsx";
 import * as Money from "./components/Money.tsx";
+import * as Economy from "./components/Economy.tsx";
 import * as Mind from "./components/Mind.tsx";
 import * as Nature from "./components/Nature.tsx";
 import * as Action from "./components/Action.tsx";
@@ -176,6 +177,7 @@ const VISUALS: Record<Scene["component"], React.FC<{ p: any; t: Theme; dur: numb
   Battery,
   Fork,
   ...Money,
+  ...Economy,
   ...Mind,
   ...Nature,
   ...Action,

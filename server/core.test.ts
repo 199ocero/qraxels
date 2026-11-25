@@ -504,10 +504,10 @@ test("calm styles: library pictures once and only where they fit, the rest drawn
   assert.deepEqual(calmIssues([sc("Giza"), sc("Sledge", "b"), sc("Lever", "c"), sc("Timeline")]), []); // library where it fits, drawn elsewhere
   assert.match(calmIssues([sc("Giza"), sc("Lever"), sc("Giza")]).join(), /at most once.*Giza/);
   assert.deepEqual(calmIssues([sc("Giza"), sc("Giza", "the pyramid, now finished")]), []); // a return to the picture is drawn
-  assert.match(calmIssues([sc("Giza"), sc("Lever")], new Set(["Giza"])).join(), /already showed Giza/);
-  assert.deepEqual(calmIssues([sc("Giza", "a"), sc("Lever")], new Set(["Giza"])), []); // only as a fallback: fine
   assert.match(calmIssues([sc("Giza", "The ramp."), sc("Sledge", "the ramp")]).join(), /shots repeat/);
   assert.match(calmIssues(["Giza", "Giza", "Giza"].map((c, i) => sc(c, `s${i}`))).join(), /Giza \(3x\)/);
+  assert.match(calmIssues([sc("Giza", "a"), sc("Lever", "b"), sc("Sledge", "c"), sc("Timeline")], 2, 1 / 3).join(), /too many drawn scenes: 3 of 4 .* at most 2/);
+  assert.deepEqual(calmIssues([sc("Giza", "a"), sc("Lever"), sc("Sledge"), sc("Timeline")], 2, 1 / 3), []); // 1 of 4 drawn: within the cap
   const ok = `import { useCurrentFrame } from "remotion";\nimport { Frame } from "kit";\nexport default function S({ p, t }) { const f = useCurrentFrame(); return <Frame p={p} t={t}><circle r={f} /></Frame>; }`;
   assert.deepEqual(checkDrawing(ok), []);
   assert.match(toJs(ok), /require\("kit"\)/); // CommonJS, so remotion/drawn.tsx can hand it the kit
