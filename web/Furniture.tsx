@@ -80,7 +80,7 @@ function Window({ x }: { x: number }) {
       <Box size={[1.9, 1.3, 0.06]} pos={[0, 0, 0]} color="#ffffff" />
       <mesh position={[0, 0, 0.035]}>
         <planeGeometry args={[1.75, 1.15]} />
-        <meshStandardMaterial color="#bfe2ff" emissive="#9fd1ff" emissiveIntensity={0.35} />
+        <meshStandardMaterial color="#1b2a4a" emissive="#2a3f6e" emissiveIntensity={0.5} />
       </mesh>
       <Box size={[0.04, 1.15, 0.03]} pos={[0, 0, 0.05]} color="#ffffff" />
       <Box size={[1.75, 0.04, 0.03]} pos={[0, 0, 0.05]} color="#ffffff" />
@@ -162,6 +162,67 @@ function Poster({ pos, colors }: { pos: V3; colors: string[] }) {
         </mesh>
       ))}
     </group>
+  );
+}
+
+// Night sky behind the back wall: moon, stars and slowly drifting clouds. Unlit materials so they glow.
+const CLOUDS: { y: number; z: number; x: number; speed: number; puffs: [number, number, number][] }[] = [
+  { x: -18, y: 9.5, z: -18, speed: 0.25, puffs: [[0, 0, 1.1], [1.2, 0.3, 1.4], [2.6, 0, 1]] },
+  { x: 4, y: 11.5, z: -20, speed: 0.18, puffs: [[0, 0, 1.3], [1.5, 0.4, 1.6], [3.1, 0.1, 1.1], [4.2, -0.2, 0.8]] },
+  { x: 16, y: 8, z: -17, speed: 0.3, puffs: [[0, 0, 0.9], [1, 0.25, 1.1], [2.1, 0, 0.8]] },
+];
+const STARS = (() => {
+  const a = new Float32Array(120 * 3);
+  for (let i = 0; i < 120; i++) {
+    const r = (n: number) => ((Math.sin(i * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1; // deterministic scatter
+    a.set([-34 + r(1) * 64, 4 + r(2) * 20, -24], i * 3);
+  }
+  return a;
+})();
+
+function Cloud({ x, y, z, speed, puffs }: (typeof CLOUDS)[number]) {
+  const ref = useRef<Group>(null);
+  useFrame((_, dt) => {
+    const g = ref.current;
+    if (!g) return;
+    g.position.x += speed * dt;
+    if (g.position.x > 28) g.position.x = -32;
+  });
+  return (
+    <group ref={ref} position={[x, y, z]}>
+      {puffs.map(([px, py, r], i) => (
+        <mesh key={i} position={[px, py, 0]} scale={[1, 0.62, 0.6]}>
+          <sphereGeometry args={[r, 16, 12]} />
+          <meshBasicMaterial color="#3a4560" transparent opacity={0.85} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+export function Sky() {
+  return (
+    <>
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[STARS, 3]} />
+        </bufferGeometry>
+        <pointsMaterial color="#cfd8ff" size={2} sizeAttenuation={false} />
+      </points>
+      <group position={[-6, 12, -22]}>
+        <mesh>
+          <sphereGeometry args={[1.6, 32, 24]} />
+          <meshBasicMaterial color="#f4f1dc" />
+        </mesh>
+        <mesh>
+          <sphereGeometry args={[2.6, 32, 24]} />
+          <meshBasicMaterial color="#f4f1dc" transparent opacity={0.08} />
+        </mesh>
+      </group>
+      {CLOUDS.map((c, i) => (
+        <Cloud key={i} {...c} />
+      ))}
+    </>
   );
 }
 

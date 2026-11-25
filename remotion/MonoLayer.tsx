@@ -1,9 +1,9 @@
 import { AbsoluteFill, Easing, Sequence, interpolate, staticFile, useCurrentFrame } from "remotion";
 import { Audio } from "@remotion/media";
-import { useMemo } from "react";
+import { useContext, useMemo } from "react";
 import type { Scene, Word } from "../server/schemas.ts";
-import { FPS, H, SAFE, W, font } from "./theme.ts";
-import { ENERGY_DB, cameraFor, censor, dropAt, focusFor, hitTimes, mirrorFor, shotAt, musicGains, musicPieces, musicWave, pulseAt, sfxCues, transitionFor, type Track } from "./mono.ts";
+import { Canvas, FPS, SAFE, font } from "./theme.ts";
+import { ENERGY_DB, XFADE, cameraFor, censor, dropAt, focusFor, hitTimes, mirrorFor, shotAt, musicGains, musicPieces, musicSegments, musicWave, pulseAt, sfxCues, transitionFor, type Segment, type Track } from "./mono.ts";
 import { Mirror, Pin } from "./components/Mono.tsx";
 import { FilmLook, FxLayer } from "./MonoFx.tsx";
 
@@ -17,29 +17,34 @@ const norm = (w: string) => w.toLowerCase().replace(/[^a-z0-9$%]/g, "");
 // direction they move (a directional blur from the camera's speed), and dim everything around the detail.
 export function MonoFrame({ i, s, dur, seed = 0, hit, calm = false, children }: { i: number; s: Scene; dur: number; seed?: number; hit?: number; calm?: boolean; children: React.ReactNode }) {
   const f = useCurrentFrame();
+  const { W, H } = useContext(Canvas);
+  // On the wide canvas the moves travel further, so they read on a big screen; library focus points are vertical-only.
+  const wide = W > H;
   const p = Easing.inOut(Easing.sin)(Math.min(1, f / dur));
   const dir = i % 2 ? 1 : -1;
   const kind = cameraFor(i, s, seed, calm);
   const mirrored = mirrorFor(i, s, seed);
-  const focus = focusFor(s.component, mirrored);
-  const shot = shotAt(kind, f, dur, focus, hit, dir);
-  const prev = shotAt(kind, f - 1, dur, focus, hit, dir);
+  const focus: [number, number] = wide ? [W / 2, H / 2] : focusFor(s.component, mirrored);
+  const shot = shotAt(kind, f, dur, focus, hit, dir, [W, H]);
+  const prev = shotAt(kind, f - 1, dur, focus, hit, dir, [W, H]);
+  const [zoom, slide, rise] = wide ? [0.18, 120, 70] : [0.1, 30, 50];
   // Simple moves as [transform, its inverse] (both about the frame's centre); the inverse pins labels in place.
   const hx = Math.sin(f / 7) * 7 + Math.sin(f / 13) * 5, hy = Math.cos(f / 9) * 6, hr = Math.sin(f / 11) * 0.6;
   const moves: Record<string, [string, string]> = {
-    push: [`scale(${1 + 0.1 * p})`, `scale(${1 / (1 + 0.1 * p)})`],
-    pull: [`scale(${1.1 - 0.1 * p})`, `scale(${1 / (1.1 - 0.1 * p)})`],
-    pan: [`translateX(${dir * 30 * (1 - 2 * p)}px) scale(1.08)`, `scale(${1 / 1.08}) translateX(${-dir * 30 * (1 - 2 * p)}px)`],
-    tilt: [`translateY(${50 - 100 * p}px) scale(1.08)`, `scale(${1 / 1.08}) translateY(${100 * p - 50}px)`],
+    push: [`scale(${1 + zoom * p})`, `scale(${1 / (1 + zoom * p)})`],
+    pull: [`scale(${1 + zoom - zoom * p})`, `scale(${1 / (1 + zoom - zoom * p)})`],
+    pan: [`translateX(${dir * slide * (1 - 2 * p)}px) scale(${wide ? 1.16 : 1.08})`, `scale(${1 / (wide ? 1.16 : 1.08)}) translateX(${-dir * slide * (1 - 2 * p)}px)`],
+    tilt: [`translateY(${rise - 2 * rise * p}px) scale(${wide ? 1.16 : 1.08})`, `scale(${1 / (wide ? 1.16 : 1.08)}) translateY(${2 * rise * p - rise}px)`],
     orbit: [`rotate(${dir * (-2.5 + 5 * p)}deg) scale(1.1)`, `scale(${1 / 1.1}) rotate(${-dir * (-2.5 + 5 * p)}deg)`],
     handheld: [`translate(${hx}px, ${hy}px) rotate(${hr}deg) scale(1.06)`, `scale(${1 / 1.06}) rotate(${-hr}deg) translate(${-hx}px, ${-hy}px)`],
   };
   const [simple, unsimple] = moves[kind as string] ?? [undefined, undefined];
   // The frame point (cx, cy) sits at the screen centre, zoomed z, tilted rot.
   const cam = shot ? `translate(${W / 2}px, ${H / 2}px) rotate(${shot.rot}deg) scale(${shot.z}) translate(${-shot.cx}px, ${-shot.cy}px)` : simple;
-  // Motion blur from the camera's speed: how far the picture slides on screen in one frame, along each axis.
-  const [vx, vy] = shot && prev ? [(shot.cx - prev.cx) * shot.z, (shot.cy - prev.cy) * shot.z] : [0, 0];
-  const vz = shot && prev ? Math.abs(shot.z - prev.z) * 900 : 0;
+  // Motion blur from the camera's speed: how far the picture slides on screen in one frame, along each axis. Only the
+  // motivation style's fast moves get it: on a calm video's slow, steady moves it just smeared the whole scene soft.
+  const [vx, vy] = shot && prev && !calm ? [(shot.cx - prev.cx) * shot.z, (shot.cy - prev.cy) * shot.z] : [0, 0];
+  const vz = shot && prev && !calm ? Math.abs(shot.z - prev.z) * 900 : 0;
   const tr = transitionFor(i, s, seed, calm);
   const e = interpolate(f, [0, tr === "fade" ? 14 : 7], [0, 1], {
     ...clamp,
@@ -123,6 +128,7 @@ export function MonoMotion({ scenes, words, music, seed = 0, calm = false, child
   const scale = 1 + 0.03 * pulse.k + zoom;
   const bright = 1 + (pulse.down ? 0.35 : 0.12) * pulse.k;
   const flicker = 0.04 * (((f * 7919) % 13) / 13);
+  const { W, H } = useContext(Canvas);
   return (
     <>
       <AbsoluteFill
@@ -230,22 +236,27 @@ export function MonoCaptions({ words, scenes, music, calm = false }: { words: Wo
 }
 
 // The track laid out by musicPieces: each piece is a plain trimmed clip at its own time (no loop, nothing before frame 0).
-function MonoMusic({ track, total, volume }: { track: Track; total: number; volume: (videoFrame: number) => number }) {
-  const src = staticFile(track.src);
+// Each segment (musicSegments) is its track laid out from `at`; segments after the first fade in, all but the last fade
+// out, over XFADE seconds where they overlap.
+function MonoMusic({ segments, volume }: { segments: Segment[]; volume: (videoFrame: number, track: Track) => number }) {
   const F = (sec: number) => Math.round(sec * FPS);
   return (
     <>
-      {musicPieces(track, total / FPS).map((p, i) => (
-        <Sequence key={i} from={F(p.at)} durationInFrames={Math.max(1, F(p.at + p.dur) - F(p.at))} name={`music ${p.from.toFixed(1)}s`}>
-          <Audio src={src} trimBefore={F(p.from) || undefined} volume={(fr) => volume(fr + F(p.at))} />
-        </Sequence>
-      ))}
+      {segments.flatMap((s, j) => {
+        const len = F(s.dur);
+        const edge = (local: number) => (j > 0 ? interpolate(local, [0, F(XFADE)], [0, 1], clamp) : 1) * (j < segments.length - 1 ? interpolate(local, [len - F(XFADE), len], [1, 0], clamp) : 1);
+        return musicPieces(s.track, s.dur).map((p, i) => (
+          <Sequence key={`${j}-${i}`} from={F(s.at + p.at)} durationInFrames={Math.max(1, F(p.at + p.dur) - F(p.at))} name={`music ${s.track.src.split("/").pop()} ${p.from.toFixed(1)}s`}>
+            <Audio src={staticFile(s.track.src)} trimBefore={F(p.from) || undefined} volume={(fr) => volume(fr + F(s.at + p.at), s.track) * edge(fr + F(p.at))} />
+          </Sequence>
+        ));
+      })}
     </>
   );
 }
 
 // Music plus every cue. Without a track (MONO_MUSIC=off) only the effects play, so a sound can be added inside TikTok.
-export function MonoSound({ track, scenes, words, end, seed = 0, calm = false }: { track?: Track; scenes: Scene[]; words: Word[]; end: number; seed?: number; calm?: boolean }) {
+export function MonoSound({ track, tracks = [], scenes, words, end, seed = 0, calm = false }: { track?: Track; tracks?: Track[]; scenes: Scene[]; words: Word[]; end: number; seed?: number; calm?: boolean }) {
   const drop = useMemo(() => dropAt(scenes), [scenes]);
   const cues = useMemo(() => sfxCues(scenes, words, seed, calm), [scenes, words, seed, calm]);
   const total = Math.round(end * FPS);
@@ -264,7 +275,6 @@ export function MonoSound({ track, scenes, words, end, seed = 0, calm = false }:
     const d = (x: Word) => Math.max(0, x.start - 0.05 - t, t - x.end - 0.1);
     return Math.min(d(w), prev ? d(prev) : 9);
   };
-  const g = track ? musicGains(track) : { under: 0, pause: 0 };
   const [wt, wg] = useMemo(() => musicWave(scenes), [scenes]);
   // Under a quiet line the music ducks as far as the line was lowered, so it never covers it.
   const duck = (t: number) => {
@@ -272,11 +282,15 @@ export function MonoSound({ track, scenes, words, end, seed = 0, calm = false }:
     while (i < scenes.length - 1 && (scenes[i + 1].start ?? 0) <= t) i++;
     return 10 ** ((ENERGY_DB[scenes[i]?.energy ?? "high"] ?? 0) / 20);
   };
-  const volume = (vf: number) =>
-    interpolate(gap(vf / FPS), [0.05, 0.5], [g.under * duck(vf / FPS), g.pause], clamp) * interpolate(vf / FPS, wt, wg, clamp) * interpolate(vf, [0, 8, total - 2.5 * FPS, total], [0, 1, 1, 0], clamp);
+  // Levels are per track: each is measured on its own (musicGains).
+  const volume = (vf: number, tr: Track) => {
+    const g = musicGains(tr);
+    return interpolate(gap(vf / FPS), [0.05, 0.5], [g.under * duck(vf / FPS), g.pause], clamp) * interpolate(vf / FPS, wt, wg, clamp) * interpolate(vf, [0, 8, total - 2.5 * FPS, total], [0, 1, 1, 0], clamp);
+  };
+  const segments = useMemo(() => musicSegments(track, tracks, scenes, end), [track, tracks, scenes, end]);
   return (
     <>
-      {track && <MonoMusic track={track} total={total} volume={volume} />}
+      <MonoMusic segments={segments} volume={volume} />
       {cues.map((c, i) => {
         // Beds shorter than their 8-in / 10-out fades (a cheer over a scene's last moment) need room for both: 20 frames.
         const len = c.dur ? Math.max(20, Math.round(c.dur * FPS)) : undefined;

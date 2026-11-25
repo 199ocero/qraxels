@@ -104,16 +104,18 @@ export type Shot = { z: number; cx: number; cy: number; rot: number; spot: numbe
 const smooth = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 const out3 = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : 1 - (1 - x) ** 3);
 // Keeps the view inside the frame so a zoomed camera never shows past a scene's edges.
-const inside = (z: number, x: number, y: number): [number, number] => {
+const inside = (z: number, x: number, y: number, [FW, FH]: [number, number]): [number, number] => {
   const [hw, hh] = [FW / (2 * z), FH / (2 * z)];
   return [Math.min(FW - hw, Math.max(hw, x)), Math.min(FH - hh, Math.max(hh, y))];
 };
-// The focus moves, frame by frame. f and dur in frames; hit = frame of the scene's hit word; dir = +1/-1 for sideways moves.
-export function shotAt(cam: string, f: number, dur: number, focus: [number, number], hit?: number, dir = 1): Shot | undefined {
+// The focus moves, frame by frame. f and dur in frames; hit = frame of the scene's hit word; dir = +1/-1 for sideways moves;
+// size = the canvas (1920x1080 for a long video).
+export function shotAt(cam: string, f: number, dur: number, focus: [number, number], hit?: number, dir = 1, size: [number, number] = [1080, 1920]): Shot | undefined {
+  const [FW, FH] = size;
   const [fx, fy] = focus;
   const u = Math.min(1, Math.max(0, f / dur));
   const at = (z: number, x: number, y: number, spot: number, rot = 0): Shot => {
-    const [cx, cy] = inside(z, x, y);
+    const [cx, cy] = inside(z, x, y, size);
     return { z, cx, cy, rot, spot };
   };
   const mix = (a: number, b: number, k: number) => a + (b - a) * k;
@@ -204,6 +206,16 @@ export function musicPieces(track: Track, end: number): Piece[] {
   const len = track.duration - from > 1 ? track.duration - from : track.duration;
   for (let t = 0; t < end - 0.01; t += len) out.push({ at: t, from: len === track.duration ? 0 : from, dur: Math.min(len, end - t) });
   return out;
+}
+
+// Long videos: each chapter plays its own track from the top, overlapping the next chapter by XFADE seconds so they
+// crossfade. `tracks[k]` is chapter k+1's track. Other videos: one segment, the whole video.
+export const XFADE = 2;
+export type Segment = { track: Track; at: number; dur: number };
+export function musicSegments(track: Track | undefined, tracks: Track[], scenes: { chapter?: number; start?: number }[], end: number): Segment[] {
+  if (!tracks.length || !scenes.some((s) => s.chapter)) return track ? [{ track, at: 0, dur: end }] : [];
+  const starts = scenes.flatMap((s, i) => (i === 0 ? [0] : s.chapter !== scenes[i - 1].chapter ? [s.start ?? 0] : []));
+  return starts.map((at, k) => ({ track: tracks[k % tracks.length], at, dur: Math.min(end, (starts[k + 1] ?? end) + XFADE) - at }));
 }
 
 // Beat number at video time t.
@@ -593,9 +605,13 @@ export function sfxCues(scenes: SceneLike[], words: WordLike[] = [], seed = 0, c
 // The Director may pick a camera move; otherwise a per-project sequence where consecutive scenes never share one.
 // calm (explainers) only rotates through the slow moves.
 const CALM_CAMERAS: Camera[] = ["focus", "reveal", "track", "push", "pull", "pan", "tilt"];
+// A drawing has no known focus point: the focus moves (1.15–1.55x on its centre) cropped its sides, worst in a vertical
+// Short. Drawn scenes get only the gentle moves (up to ~1.1x), which stay inside the stage's margin.
+const GENTLE = new Set<Camera>(["push", "pull", "pan", "tilt", "orbit", "handheld"]);
 export const cameraFor = (i: number, s: SceneLike, seed = 0, calm = false): Camera => {
-  if ((CAMERAS as readonly string[]).includes(s.camera ?? "")) return s.camera as Camera;
-  const from = calm ? CALM_CAMERAS : CAMERAS;
+  const drawn = s.component === "Drawn";
+  if ((CAMERAS as readonly string[]).includes(s.camera ?? "") && (!drawn || GENTLE.has(s.camera as Camera))) return s.camera as Camera;
+  const from = (calm ? CALM_CAMERAS : CAMERAS).filter((c) => !drawn || GENTLE.has(c));
   return from[pick(from.length, seed, i)];
 };
 // zoom/whip/glitch are CSS moves in MonoFrame; dissolve/blinds/burn are WebGL effects in MonoFx's FxLayer.

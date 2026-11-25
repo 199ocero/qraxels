@@ -147,9 +147,10 @@ function Files({ p }: { p: State }) {
     projectFiles(p.id).then(setFiles);
   }, [p.id, p.updated_at]);
   const url = (f: string) => `/files/${p.id}/${f}?v=${encodeURIComponent(p.updated_at)}`;
-  const docs = files.filter((f) => /^(research|sources|script)\.md$|^scenes\.json$/.test(f));
+  const docs = files.filter((f) => /^(research|sources|script)\.md$|^scenes\.json$|^description\.txt$/.test(f));
   const stills = files.filter((f) => f.startsWith("stills/"));
   const thumbs = files.filter((f) => f.startsWith("thumbs/"));
+  const shorts = files.filter((f) => /^shorts\/short-\d+\.mp4$/.test(f)).sort((x, y) => parseInt(x.slice(12)) - parseInt(y.slice(12)));
   const videos = files.filter((f) => /^out.*\.mp4$/.test(f)).sort().reverse();
   if (!files.length) return <p className="hint">No files yet.</p>;
   return (
@@ -174,7 +175,7 @@ function Files({ p }: { p: State }) {
       )}
       {thumbs.length > 0 && (
         <>
-          <p className="hint">Thumbnails (1080x1920, YouTube Shorts and Reels covers)</p>
+          <p className="hint">{p.layout === "long" ? "Thumbnails (1920x1080, for the YouTube video)" : "Thumbnails (1080x1920, YouTube Shorts and Reels covers)"}</p>
           <div className="stills">
             {thumbs.map((f) => (
               <a key={f} href={url(f)} target="_blank" rel="noreferrer" download>
@@ -182,6 +183,21 @@ function Files({ p }: { p: State }) {
               </a>
             ))}
           </div>
+        </>
+      )}
+      {shorts.length > 0 && (
+        <>
+          <p className="hint">Shorts, one per chapter (1080x1920)</p>
+          <p className="links">
+            {shorts.map((f) => (
+              <a key={f} href={url(f)} target="_blank" rel="noreferrer" download>
+                {f.replace("shorts/", "")}
+              </a>
+            ))}
+            <a href={url("shorts/titles.txt")} target="_blank" rel="noreferrer">
+              titles.txt
+            </a>
+          </p>
         </>
       )}
       {stills.length > 0 && (

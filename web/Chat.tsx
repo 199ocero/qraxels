@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ChatMsg, State } from "../server/project.ts";
 import { getVersion, sim, subscribe } from "./sim.ts";
-import { api } from "./api.ts";
+import { api, musicFiles } from "./api.ts";
 
 const colorOf = (from: string) => [...sim.bots.values()].find((b) => b.name === from)?.color ?? "var(--you)";
 
@@ -11,6 +11,53 @@ function ScriptPreview({ id }: { id: string }) {
     fetch(`/files/${id}/script.md`).then((r) => (r.ok ? r.text() : "Script file not found.")).then(setText);
   }, [id]);
   return <pre className="script">{text}</pre>;
+}
+
+// Re-renders the video with another track; the picture and voice stay as they are.
+function MusicPicker({ p }: { p: State }) {
+  const [files, setFiles] = useState<string[]>([]);
+  const [served, setServed] = useState("");
+  const [pick, setPick] = useState(p.music ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    musicFiles(p.id).then((m) => {
+      setFiles(m.files);
+      setServed(m.served);
+    });
+  }, [p.id]);
+  const change = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await api("music", { id: p.id, music: pick || undefined });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!files.length) return null;
+  return (
+    <>
+      <div className="row">
+        <select value={pick} onChange={(e) => setPick(e.target.value)} aria-label="Music">
+          <option value="">Default music (from .env)</option>
+          {files.map((f) => (
+            <option key={f} value={f}>
+              {f.replace(/\.\w+$/, "")}
+            </option>
+          ))}
+          <option value="off">No music</option>
+        </select>
+        <button disabled={busy || pick === (p.music ?? "")} onClick={change}>
+          Change music
+        </button>
+      </div>
+      {pick && pick !== "off" && <audio key={pick} src={`${served}${encodeURIComponent(pick)}`} controls preload="none" aria-label={`Preview ${pick}`} />}
+      {error && <p className="error">{error}</p>}
+    </>
+  );
 }
 
 export function GateCard({ p }: { p: State }) {
@@ -32,6 +79,7 @@ export function GateCard({ p }: { p: State }) {
       <button className="approve" disabled={busy} onClick={() => act(() => api("approve", { id: p.id }))}>
         Approve {p.gate === "script" ? "script" : "video"}
       </button>
+      {p.gate === "video" && <MusicPicker p={p} />}
       <textarea placeholder="Or say what to change…" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
       <div className="row">
         <select value={to} onChange={(e) => setTo(e.target.value)} aria-label="Send back to">
@@ -126,6 +174,7 @@ export function Chat({ project, setProject, onOpen }: { project: string | null; 
           <option value="explained">Explained</option>
           <option value="mono">Motivation</option>
           <option value="built">How it was built</option>
+          <option value="long">Explained · long (16:9)</option>
         </select>
         <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={project ? "Start another project…" : "Hand a topic to the team…"} maxLength={200} aria-label="New topic" />
         <button type="submit" disabled={!topic.trim()}>

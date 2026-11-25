@@ -3,7 +3,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, OrthographicCamera } from "@react-three/drei";
 import { Vector3 } from "three";
 import { Bot } from "./Bot.tsx";
-import { Cubicle, Decor, Floor, Kitchen, Lounge, Restroom, Room, YourDesk } from "./Furniture.tsx";
+import { Cubicle, Decor, Floor, Kitchen, Lounge, Restroom, Room, Sky, YourDesk } from "./Furniture.tsx";
 import { People, wife, you } from "./People.tsx";
 import { DESK, FLOOR, SPOTS, STEPS, getVersion, sim, subscribe, tick, type BotSim } from "./sim.ts";
 
@@ -88,7 +88,7 @@ export function Office() {
   return (
     <>
       <Canvas shadows="percentage" dpr={[1, 2]}>
-        <color attach="background" args={["#e8edf3"]} />
+        <color attach="background" args={["#0f131b"]} />
         <OrthographicCamera makeDefault position={[CENTER[0] + 12, 15, 17]} zoom={36} near={-50} far={200} />
         <OrbitControls target={CENTER} maxPolarAngle={1.2} minZoom={20} maxZoom={120} enableDamping />
         <hemisphereLight args={["#fff8ee", "#c9b8a2", 0.9]} />
@@ -107,6 +107,7 @@ export function Office() {
         />
         {/* soft light from the windows */}
         <directionalLight position={[-2, 6, -14]} intensity={0.35} color="#cfe6ff" />
+        <Sky />
         <Floor />
         <Room />
         <Kitchen />

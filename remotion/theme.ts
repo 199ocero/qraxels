@@ -1,3 +1,4 @@
+import { createContext } from "react";
 import { Easing } from "remotion";
 import { loadFont as loadDisplay } from "@remotion/google-fonts/SpaceGrotesk";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
@@ -9,6 +10,9 @@ import { loadFont as loadNoto } from "@remotion/google-fonts/NotoSans";
 export const W = 1080;
 export const H = 1920;
 export const FPS = 30;
+// The canvas the picture layers draw on: vertical, or 1920x1080 for a long video's full-width drawings.
+export const WIDE_CANVAS = { W: 1920, H: 1080 };
+export const Canvas = createContext({ W, H });
 
 // Platform UI covers the top and bottom of vertical video; keep text out of these bands.
 export const SAFE = { top: 220, bottom: 380, side: 70 };
@@ -37,6 +41,8 @@ export type Theme = {
   // Where captions sit; visuals take the rest of the safe area.
   captions: "top" | "bottom";
   titleFont?: string;
+  // Long videos' drawings: the 1920x1080 canvas, captions along the bottom.
+  wide?: boolean;
 };
 
 // The only look: black and white.
@@ -44,6 +50,7 @@ export const MONO: Theme = { name: "mono", bg: "#000000", bg2: "#0b0b0b", line: 
 
 // The box visuals may use, leaving room for captions on the theme's caption side.
 export function stage(t: Theme) {
+  if (t.wide) return { left: 100, right: 1820, top: 90, bottom: 890, width: 1720, height: 800, cx: 960, cy: 490 };
   const capH = 260;
   const top = SAFE.top + (t.captions === "top" ? capH : 20);
   const bottom = H - SAFE.bottom - (t.captions === "bottom" ? capH : 20);

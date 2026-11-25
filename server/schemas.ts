@@ -14,9 +14,10 @@ export const ScriptShape = z.object({
   analogy_breaks_down: z.string().min(1),
   // section: where the beat sits in the speech's wave (prompts/script-mono.md). Optional here so older and
   // hand-edited scripts still load; the script job requires it.
-  beats: z.array(z.object({ section: z.enum(SECTIONS).or(z.enum(EXPLAINED_SECTIONS)).optional(), narration: z.string().min(1), visual_idea: z.string().min(1) })).min(4).max(24),
+  // chapter: long videos only, the title of the chapter this beat belongs to (consecutive beats share it).
+  beats: z.array(z.object({ section: z.enum(SECTIONS).or(z.enum(EXPLAINED_SECTIONS)).optional(), chapter: z.string().min(1).max(40).optional(), narration: z.string().min(1), visual_idea: z.string().min(1) })).min(4).max(80),
   flagged_claims: z.array(z.string()),
-  estimated_seconds: z.number().min(55).max(150),
+  estimated_seconds: z.number().min(55).max(720),
 });
 // The model's own estimate is unreliable; count words so the video lands at the style's length.
 const scriptOf = (min: number, max: number, secs: string) =>
@@ -31,6 +32,24 @@ export const Script = scriptOf(240, 320, "90–120");
 export const ExplainedScript = scriptOf(210, 270, "95–120");
 export type Script = z.infer<typeof ScriptShape>;
 
+const wordCount = (t: string) => t.split(/\s+/).filter(Boolean).length;
+// A long script's chapter titles, in order.
+export const chaptersOf = (s: Script) => [...new Set(s.beats.flatMap((b) => (b.chapter ? [b.chapter] : [])))];
+// Long: 1100–1400 words at ~2.25 words/s is 8–10 minutes (8+ minutes allows mid-roll ads). Each chapter is 150–280
+// words, i.e. 60–120 s: a chapter is cut into its own Short later, so it has to stand on its own.
+export const LongScript = scriptOf(1100, 1400, "8–10 minutes").superRefine((s, ctx) => {
+  const bad = (message: string) => ctx.addIssue({ code: "custom", path: ["beats"], message });
+  if (s.beats.some((b) => !b.chapter)) return bad("give every beat its chapter title");
+  const titles = chaptersOf(s);
+  // A title that comes back after another chapter started means the chapters are interleaved.
+  const runs = s.beats.filter((b, i) => i === 0 || b.chapter !== s.beats[i - 1].chapter).length;
+  if (runs !== titles.length) bad("each chapter's beats must be together, in one run; never come back to an earlier chapter");
+  if (titles.length < 5 || titles.length > 7) bad(`write 5–7 chapters, not ${titles.length}`);
+  for (const t of titles) {
+    const n = wordCount(s.beats.filter((b) => b.chapter === t).map((b) => b.narration).join(" "));
+    if (n < 150 || n > 280) bad(`chapter "${t}" is ${n} words; each chapter must be 150–280 words`);
+  }
+});
 const label = z.string().min(1).max(28);
 // A money/number counter that ticks up ("NET WORTH" $0 → $63,930).
 const stat = z.object({ label: z.string().min(1).max(20), to: z.number().int().min(0).max(1e9), from: z.number().int().min(0).max(1e9).optional(), prefix: z.string().max(2).optional() });
@@ -124,6 +143,8 @@ export const Scene = z
     camera: z.enum(CAMERAS).optional(),
     // How the line is delivered: the music and effects dip under calm and quiet lines (remotion/mono.ts ENERGY_DB).
     energy: z.enum(["low", "calm", "high"]).optional(),
+    // Long videos: the chapter (1 = first) this scene belongs to, so each chapter can be cut into a Short.
+    chapter: z.number().int().min(1).optional(),
     // Filled in by the Narrator from the word timestamps.
     start: z.number().optional(),
     end: z.number().optional(),
@@ -131,8 +152,22 @@ export const Scene = z
   .and(SceneVisual);
 export type Scene = z.infer<typeof Scene>;
 
-export const Scenes = z.object({ scenes: z.array(Scene).min(5).max(40) });
+export const Scenes = z.object({ scenes: z.array(Scene).min(5).max(130) });
 export type Scenes = z.infer<typeof Scenes>;
+
+// The fact checker's verdict on each flagged claim (prompts/factcheck.md), found with web search.
+export const FactCheck = z.object({
+  claims: z.array(
+    z.object({
+      claim: z.string().min(1),
+      verdict: z.enum(["confirmed", "wrong", "unsure"]),
+      // What's actually true, phrased to replace the claim; only for "wrong".
+      correction: z.string().optional(),
+      source: z.string().optional(),
+    }),
+  ),
+});
+export type FactCheck = z.infer<typeof FactCheck>;
 
 export const Review = z.object({
   ok: z.boolean(),

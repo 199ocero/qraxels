@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 import { Easing, interpolate, useCurrentFrame } from "remotion";
-import { font, stage, W, H, type Theme } from "../theme.ts";
+import { Canvas, font, stage, W, H, type Theme } from "../theme.ts";
 import { useIn, type VisualProps } from "./common.tsx";
 import { saidAt, tickAt } from "../mono.ts";
 
@@ -192,12 +192,14 @@ export const Mirror = createContext(false);
 export const Pin = createContext<string | undefined>(undefined);
 function Pinned({ children }: { children: React.ReactNode }) {
   const pin = useContext(Pin);
+  const { W, H } = useContext(Canvas);
   return pin ? <div style={{ position: "absolute", left: 0, top: 0, width: W, height: H, transform: pin, transformOrigin: "0 0" }}>{children}</div> : <>{children}</>;
 }
 
 // Every scene's SVG carries the glow filter (the references are lit, not flat).
 export function Scene({ children }: { children: React.ReactNode }) {
   const mirror = useContext(Mirror);
+  const { W, H } = useContext(Canvas);
   return (
     <svg width={W} height={H} style={{ position: "absolute" }}>
       <defs>
@@ -252,7 +254,9 @@ export function StatCounter({ stat, t, dur, y }: { stat: Stat; t: Theme; dur: nu
 }
 
 // The ground line plus a floor plane: lines fan out from the horizon toward the viewer and fade, for depth.
-export const Ground = ({ y, dash = 0, offset = 0 }: { y: number; dash?: number; offset?: number }) => (
+export const Ground = ({ y, dash = 0, offset = 0 }: { y: number; dash?: number; offset?: number }) => {
+  const { W } = useContext(Canvas);
+  return (
   <>
     {Array.from({ length: 13 }, (_, k) => (
       <line key={k} x1={W / 2 + (k - 6) * 40} y1={y} x2={W / 2 + (k - 6) * 420} y2={y + 460} stroke="#fff" strokeOpacity={0.07} strokeWidth={2} />
@@ -260,7 +264,8 @@ export const Ground = ({ y, dash = 0, offset = 0 }: { y: number; dash?: number; 
     {[50, 130, 250].map((d, k) => <line key={`h${d}`} x1={0} y1={y + d} x2={W} y2={y + d} stroke="#fff" strokeOpacity={0.06 - k * 0.015} strokeWidth={2} />)}
     <line x1={0} y1={y} x2={W} y2={y} stroke="#cfcfcf" strokeWidth={4} strokeDasharray={dash ? `${dash} ${dash * 0.6}` : undefined} strokeDashoffset={offset} />
   </>
-);
+  );
+};
 
 // Grey strangers walk past; the lit one sits alone in the ring (and maybe gets up).
 export function Crowd({ p, t, dur }: VisualProps<{ ending?: "alone" | "stands" }>) {

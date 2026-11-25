@@ -6,7 +6,8 @@ import { pixelDissolve } from "@remotion/effects/pixel-dissolve";
 import { venetianBlinds } from "@remotion/effects/venetian-blinds";
 import { zoomBlur } from "@remotion/effects/zoom-blur";
 import type { Scene } from "../server/schemas.ts";
-import { FPS, H, W } from "./theme.ts";
+import { useContext } from "react";
+import { Canvas, FPS } from "./theme.ts";
 import { OUTRO, lookFor, transitionFor } from "./mono.ts";
 
 // Post-processing with Remotion's WebGL effects (@remotion/effects, 4.0.5xx). Renders need WebGL: every render call
@@ -38,6 +39,7 @@ export function effectsAt(scenes: Scene[], hits: number[], seed: number, f: numb
 // The scene picture, through the effects canvas only on the frames that have effects.
 export function FxLayer({ scenes, hits, seed, children }: { scenes: Scene[]; hits: number[]; seed: number; children: React.ReactNode }) {
   const fx = effectsAt(scenes, hits, seed, useCurrentFrame());
+  const { W, H } = useContext(Canvas);
   if (!fx.length) return <>{children}</>;
   return (
     <HtmlInCanvas width={W} height={H} effects={fx}>
@@ -49,7 +51,9 @@ export function FxLayer({ scenes, hits, seed, children }: { scenes: Scene[]; hit
 // The project's film look, drawn in SVG/CSS (not WebGL) so it never needs a canvas: TV scanlines or heavy grain.
 export function FilmLook({ seed }: { seed: number }) {
   const f = useCurrentFrame();
-  const look = lookFor(seed);
+  const { W, H } = useContext(Canvas);
+  // Long videos (the wide canvas) stay clean: scanlines and heavy grain read as damage on a big screen.
+  const look = W > H ? "clean" : lookFor(seed);
   if (look === "scanlines")
     return <AbsoluteFill style={{ backgroundImage: "repeating-linear-gradient(0deg, rgba(0,0,0,0.4) 0 3px, transparent 3px 7px)", backgroundPositionY: f * 0.6 }} />;
   if (look === "noise")
@@ -68,6 +72,7 @@ export function FilmLook({ seed }: { seed: number }) {
 // A monochrome light leak washes over the drop and over the outro.
 export function LightLeaks({ drop, end, seed }: { drop: number; end: number; seed: number }) {
   const f = useCurrentFrame();
+  const { W, H } = useContext(Canvas);
   const leak = (at: number, dur: number) => interpolate(f, [at * FPS, (at + dur) * FPS], [0, 1], clamp);
   const [a, b] = [leak(drop - 0.1, 1.4), leak(end - OUTRO, OUTRO - 0.5)];
   const p = a > 0 && a < 1 ? a : b > 0 && b < 1 ? b : 0;

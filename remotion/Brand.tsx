@@ -8,7 +8,7 @@ import { font } from "./theme.ts";
 const NAME = "QRAXELS";
 const TAG = "BIG IDEAS · EXPLAINED IN BLACK AND WHITE";
 
-function Defs() {
+export function Defs() {
   return (
     <defs>
       <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
@@ -29,7 +29,7 @@ function Defs() {
   );
 }
 
-function Backdrop({ w, h }: { w: number; h: number }) {
+export function Backdrop({ w, h }: { w: number; h: number }) {
   return (
     <>
       <rect width={w} height={h} fill="url(#spot)" />

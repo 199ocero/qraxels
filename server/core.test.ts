@@ -232,6 +232,17 @@ test("redo from any step, keeps the old video, refuses while busy; archive moves
   assert.deepEqual(order, ["voice", "build", "render"]);
   assert.ok(readdirSync(P.dir(s.id)).some((f) => /^out-.*\.mp4$/.test(f)));
 
+  // Change music: only the render step runs again, with the pick saved on the project; unknown files are refused.
+  order.length = 0;
+  assert.throws(() => office.music(s.id, "../../etc/passwd"), /no \.\.\/\.\.\/etc\/passwd in the music folder/);
+  office.music(s.id, "off");
+  assert.equal(P.load(s.id).music, "off");
+  await gate("video");
+  assert.deepEqual(order, ["render"]);
+  office.music(s.id);
+  assert.equal(P.load(s.id).music, undefined);
+  await gate("video");
+
   // Can't redo from a step whose inputs aren't done.
   const t = office.newTopic("Queue");
   await gate("script");
@@ -380,6 +391,7 @@ test("motivation style: mono projects, sound cues on earshot peaks, drop-aligned
   assert.equal((await musicLibrary(loud, dir, "loud.mp3"))[0].src, "sound/music/loud.mp3");
   assert.deepEqual(await musicLibrary(run, dir, "off"), []);
   await assert.rejects(musicLibrary(run, dir, "missing.mp3"), /no such file/);
+  assert.equal((await musicLibrary(run, dir, undefined, "sound/music/calm"))[0].src, "sound/music/calm/one.mp3");
 
   // Checklist items tick when their first word is spoken, in order; an unsaid item falls back to even spacing.
   const { saidAt } = await import("../remotion/mono.ts");
@@ -502,6 +514,37 @@ test("calm styles: library pictures once and only where they fit, the rest drawn
   assert.match(checkDrawing(ok.replace(`"kit"`, `"../Mono.tsx"`)).join(), /imports "..\/Mono.tsx"/);
   assert.match(checkDrawing(ok.replace("f}", "Math.random()}")).join(), /Math.random/);
   assert.match(checkDrawing(ok.replace("<circle", "<circle <")).join(), /doesn't compile/);
+  assert.match(checkDrawing(ok.replace("f}", "pop(f)}")).join(), /calls pop/);
+  assert.deepEqual(checkDrawing(ok.replace("f}", "Easing.ease(f)}")), []);
+});
+
+test("long videos: chapters planned apart, clashes blamed on the later chapter, stitched into one plan", async () => {
+  const { chapterClashes, spread, stitch, fill } = await import("./bots/claude-bots.ts");
+  const sc = (component: string, shot?: string) => ({ component, shot });
+  assert.deepEqual(chapterClashes([[sc("Giza"), sc("Lever", "a ramp")], [sc("Sledge", "a sledge")]]), new Map());
+  const c = chapterClashes([[sc("Giza"), sc("Lever", "A ramp.")], [sc("Giza")], [sc("Sledge", "a ramp")]]);
+  assert.deepEqual([...c.keys()], [1, 2]); // chapter 1 keeps what it used first
+  assert.match(c.get(1)!.join(), /chapter 1 already shows the library picture Giza/);
+  assert.match(c.get(2)!.join(), /repeats one in chapter 1/);
+  assert.match(chapterClashes([[sc("Chart", "a"), sc("Chart", "b")], [sc("Chart", "c"), sc("Chart", "d")]]).get(1)!.join(), /Chart is already used 3 times/);
+  assert.match(chapterClashes([[sc("Run", "a"), sc("Lift", "b")], [sc("Boxing", "c")]]).get(1)!.join(), /2 workout scenes/);
+  assert.deepEqual(spread(6, 7), [0, 1, 1, 1, 1, 1, 1]);
+  assert.equal(spread(4, 5).reduce((a, b) => a + b), 4);
+  const s = (purpose: string, extra = {}) => ({ purpose, narration: "x", component: "Chart", props: {}, speed: 1, pause_after: 0.3, ...extra }) as never;
+  const out = stitch([[s("explain", { hit: "a", camera: "push" }), s("payoff")], [s("hook", { camera: "focus" }), s("outro", { camera: "focus", hit: "b" })]]);
+  assert.deepEqual(out.map((x) => x.chapter), [1, 1, 2, 2]);
+  assert.deepEqual(out.map((x) => x.purpose), ["hook", "explain", "payoff", "outro"]); // the models' own hook/payoff/outro are replaced
+  assert.equal(out[3].camera, "pull");
+  assert.equal(out[3].hit, undefined); // the ending has no hit
+  assert.equal(out[0].hit, "a");
+  const many = stitch([Array.from({ length: 8 }, (_, i) => s("explain", { hit: `h${i}`, sfx: "clock" }))]);
+  assert.equal(many.filter((x) => x.hit).length, 6);
+  assert.equal(many.filter((x) => x.sfx).length, 4);
+  assert.equal(stitch([[s("explain", { camera: "pan" }), s("explain", { camera: "pan" })]])[1].camera, "pull"); // last scene
+  assert.equal(stitch([[s("explain", { camera: "pan" })], [s("explain", { camera: "pan" }), s("explain")]])[1].camera, undefined); // no repeat across the seam
+  const p = fill("scenes", { part: "You plan ONLY chapter 2 of 5" }, undefined, "long");
+  assert.match(p, /You plan ONLY chapter 2 of 5/);
+  assert.doesNotMatch(p, /55–90 scenes|in the whole video/);
 });
 
 test("approving the video runs the thumbnail job once; script approval doesn't", async () => {
@@ -526,4 +569,144 @@ test("thumbnail frames: three spread picks, skipping text-only scenes", async ()
   assert.equal(f.length, 3);
   assert.ok(f.every((x, i) => x > 4 * 30 && (i === 0 || x > f[i - 1])));
   assert.equal(thumbFrames([{ component: "Chart", start: 0, end: 2 }]).length, 1);
+});
+
+test("long style: chaptered script, scenes carry their chapter's narration word for word, 16:9 props", async () => {
+  const { LongScript, chaptersOf } = await import("./schemas.ts");
+  const { chapterIssues } = await import("./bots/claude-bots.ts");
+  // 6 chapters x 4 beats x 50 words = 1200 words, 200 per chapter.
+  const script = (chapters: number, words = 50, beats = 4) => ({
+    title: "t", hook: "h", analogy: "a", analogy_breaks_down: "b", flagged_claims: [], estimated_seconds: 530,
+    beats: Array.from({ length: chapters * beats }, (_, i) => ({ chapter: `Part ${Math.floor(i / beats) + 1}`, narration: `${i} ${Array(words - 1).fill("word").join(" ")}.`, visual_idea: "v" })),
+  });
+  assert.ok(LongScript.safeParse(script(6)).success);
+  assert.ok(!LongScript.safeParse(script(4, 70)).success); // 4 chapters (280 words each) is too few
+  assert.ok(!LongScript.safeParse(script(6, 40)).success); // 960 words, under 8 minutes
+  const untitled = script(6);
+  delete (untitled.beats[3] as { chapter?: string }).chapter;
+  assert.ok(!LongScript.safeParse(untitled).success);
+  const interleaved = script(6);
+  interleaved.beats[23].chapter = "Part 1"; // comes back to chapter 1 at the end
+  assert.ok(!LongScript.safeParse(interleaved).success);
+
+  const s = script(6);
+  assert.deepEqual(chaptersOf(s), ["Part 1", "Part 2", "Part 3", "Part 4", "Part 5", "Part 6"]);
+  // One scene per beat, split across two scenes for the first beat: same words, so it's fine.
+  const [a, b] = [s.beats[0].narration.split(" ").slice(0, 10).join(" "), s.beats[0].narration.split(" ").slice(10).join(" ")];
+  const scenes = [{ chapter: 1, narration: a }, { chapter: 1, narration: b }, ...s.beats.slice(1).map((x, i) => ({ chapter: Math.floor((i + 1) / 4) + 1, narration: x.narration }))];
+  assert.deepEqual(chapterIssues(s, scenes), []);
+  assert.match(chapterIssues(s, scenes.map((x, i) => (i === 4 ? { ...x, chapter: 2 } : x))).join(), /chapter 1 .*word for word/); // a chapter-1 line filed under 2
+  assert.match(chapterIssues(s, scenes.map((x, i) => (i === 9 ? { ...x, chapter: 1 } : x))).join(), /never go back down/);
+  assert.match(chapterIssues(s, scenes.map(({ narration }) => ({ narration }))).join(), /every scene its chapter/);
+
+  // The render props: 16:9 with the script's chapter titles.
+  const { propsOf } = await import("./bots/remotion.ts");
+  const L = P.create("How Costco makes money", new Date(), "long");
+  writeFileSync(P.dir(L.id, "script.json"), JSON.stringify(s));
+  const props = propsOf({ scenes: [], words: [], audio: [] }, L.id, [], "long");
+  assert.equal(props.wide, true);
+  assert.equal(props.calm, true);
+  assert.equal(props.chapters?.length, 6);
+});
+
+test("long style: review per chapter, a track per chapter, chapters cut into Shorts, fact-check verdicts in script.md", async () => {
+  const { reviewParts, chapterShort } = await import("./bots/remotion.ts");
+  assert.deepEqual(reviewParts([{ chapter: 1 }, { chapter: 1 }, { chapter: 2 }, { chapter: 3 }, { chapter: 3 }]), [[0, 2], [2, 3], [3, 5]]);
+  assert.deepEqual(reviewParts([{}, {}, {}]), [[0, 3]]); // a Short: one review
+
+  const { musicSegments, XFADE } = await import("../remotion/mono.ts");
+  const tr = (src: string) => ({ src, drop: null, bpm: 80, downbeat: 0, pulseEvery: 1, duration: 150, start: 0 });
+  const [a, b] = [tr("a.mp3"), tr("b.mp3")];
+  const sc = [{ chapter: 1, start: 0 }, { chapter: 1, start: 50 }, { chapter: 2, start: 100 }, { chapter: 3, start: 180 }];
+  const segs = musicSegments(a, [a, b], sc, 300);
+  assert.deepEqual(segs.map((x) => [x.track.src, x.at, x.dur]), [["a.mp3", 0, 100 + XFADE], ["b.mp3", 100, 80 + XFADE], ["a.mp3", 180, 120]]);
+  assert.deepEqual(musicSegments(a, [], sc, 300).map((x) => [x.at, x.dur]), [[0, 300]]); // no chapter tracks: one track throughout
+  assert.deepEqual(musicSegments(undefined, [], sc, 300), []); // music off
+
+  // Chapter 2 of a 3-chapter video: its 2 scenes and words, shifted to 0; the voice is cut just after its last word.
+  const w = (word: string, start: number, scene: number) => ({ word, start, end: start + 0.4, scene });
+  const video = {
+    scenes: [0, 10, 20, 30, 40].map((t, i) => ({ purpose: "explain", narration: "x", component: "Chart", props: {}, chapter: [1, 2, 2, 3, 3][i], start: t, end: t + 10 })),
+    words: [w("one", 1, 0), w("two", 11, 1), w("three", 25, 2), w("four", 31, 3)],
+    audio: [{ src: "audio/voice.wav", start: 0 }],
+    music: a,
+    chapterMusic: [a, b, a],
+    drawn: ["d0", null, "d2", null, null],
+    seed: 7,
+    calm: true,
+    wide: true,
+    chapters: ["A", "B", "C"],
+  } as unknown as import("../remotion/Explainer.tsx").ExplainerProps;
+  const short = chapterShort(video, 2);
+  assert.deepEqual(short.scenes.map((s) => [s.start, s.end]), [[0, 10], [10, 20]]);
+  assert.deepEqual(short.words.map((x) => [x.word, x.start, x.scene]), [["two", 1, 0], ["three", 15, 1]]);
+  assert.equal(short.audio[0].start, -10);
+  assert.ok(Math.abs(short.audio[0].end! - 15.7) < 1e-9); // "three" ends at 15.4, plus 0.3
+  assert.equal(short.music?.src, "b.mp3");
+  assert.deepEqual(short.drawn, [null, "d2"]);
+  assert.equal(short.wide, undefined); // vertical
+  assert.deepEqual(short.tallAs, [null, "box"]); // an older wide-only drawing: shown whole, not cut off
+
+  // How a long video's drawings play in its Shorts, from the markers their files export.
+  const { toJs, tallAsOf, checkDrawing } = await import("./bots/draw.ts");
+  const file = (extra: string) => toJs(`export default function S() { return null; }\n${extra}`);
+  assert.equal(tallAsOf(file("export const responsive = true;")), "native");
+  assert.equal(tallAsOf(file("export const responsive = true;\nexport const wideOnly = true;")), "pan");
+  assert.equal(tallAsOf(file("")), "box");
+  assert.equal(tallAsOf(null), null);
+  assert.deepEqual(chapterShort({ ...video, drawn: [file("export const responsive = true;"), null, null, null, null] }, 1).tallAs, ["native"]);
+  assert.match(checkDrawing('import { Frame } from "kit";\nexport default function S() { return null; }\nfunction stage(t) { return {}; }').join(), /own stage/);
+
+  // Drawn scenes never get a focus move: it zooms 1.15–1.55x on the centre and crops the drawing's sides.
+  const { cameraFor } = await import("../remotion/mono.ts");
+  const drawnScene = { purpose: "explain", component: "Drawn", camera: "focus" };
+  for (let i = 0; i < 40; i++) for (const calm of [true, false]) assert.match(cameraFor(i, drawnScene, 3, calm), /^(push|pull|pan|tilt|orbit|handheld)$/);
+  assert.equal(cameraFor(0, { ...drawnScene, component: "Chart" }, 3, true), "focus"); // library scenes keep theirs
+
+  // Drawing layout: the same call goes side by side on the wide stage and stacks on the tall one.
+  const { box, split, row, place } = await import("../remotion/layout.ts");
+  const wideS = box(100, 90, 1820, 890), tallS = box(70, 480, 1010, 1520);
+  const [l, r] = split(wideS);
+  assert.ok(l.right < r.left && l.top === r.top);
+  const [up, down] = split(tallS);
+  assert.ok(up.bottom < down.top && up.left === down.left);
+  assert.deepEqual(row(wideS, 3).map((c) => Math.round(c.top)), [90, 90, 90]);
+  const grid = row(tallS, 3);
+  assert.ok(grid[0].top === grid[1].top && grid[2].top > grid[0].top && Math.abs(grid[2].cx - tallS.cx) < 1e-9); // 2 + a centred 1
+  for (const c of [...grid, ...row(wideS, 4)]) assert.ok(c.left >= 70 - 1e-9 && c.right <= 1820 + 1e-9);
+  assert.equal(place(box(0, 0, 300, 1000), 600, 500), "translate(0 750) scale(0.5)"); // fit by width, standing on the bottom
+  assert.match(short.endCard!, /full video/i);
+  assert.equal(chapterShort(video, 3).scenes.length, 2); // the last chapter runs to the end
+  const { shortDescription } = await import("./bots/remotion.ts");
+  const d = shortDescription({ ...short, scenes: [{ ...short.scenes[0], narration: "A card costs $65." }, ...short.scenes.slice(1)], music: { ...b, credit: "Music: Song by Someone" } }, "B", "How X works");
+  assert.equal(d, 'B\n\nA card costs $65.\n\nFull video on my channel: "How X works"\n\nMusic: Song by Someone\n\n#Shorts\n');
+  assert.doesNotMatch(shortDescription({ ...short, music: null }, "B", "T"), /Music/); // no track, no credit
+  assert.throws(() => chapterShort(video, 4), /no chapter 4/);
+
+  // script.md shows each claim's verdict; a claim edited by hand since the check shows as not checked.
+  const { writeScript } = await import("./bots/claude-bots.ts");
+  const p = P.create("Fact check", new Date(), "long");
+  writeFileSync(P.dir(p.id, "factcheck.json"), JSON.stringify({ claims: [{ claim: "Costco charges $65", verdict: "confirmed", source: "https://example.com/a" }, { claim: "Hot dog since 1990", verdict: "wrong", correction: "since 1985" }] }));
+  const s = { title: "t", hook: "h", analogy: "a", analogy_breaks_down: "b", estimated_seconds: 500, flagged_claims: ["Costco charges $65", "Hot dog since 1990", "A new claim"], beats: Array.from({ length: 4 }, () => ({ narration: "word", visual_idea: "v" })) };
+  writeScript(p.id, s);
+  const md = (await import("node:fs")).readFileSync(P.dir(p.id, "script.md"), "utf8");
+  assert.match(md, /\[confirmed \(source: https:\/\/example.com\/a\)\] Costco charges \$65/);
+  assert.match(md, /\[WRONG: since 1985\] Hot dog since 1990/);
+  assert.match(md, /\[not checked\] A new claim/);
+});
+
+test("long style: YouTube chapter timestamps start at 0:00", async () => {
+  const { chapterTimestamps } = await import("./bots/remotion.ts");
+  const scenes = [{ chapter: 1, start: 0.4 }, { chapter: 1, start: 30 }, { chapter: 2, start: 95.6 }, { chapter: 3, start: 612 }];
+  assert.deepEqual(chapterTimestamps(scenes, ["The $65 ticket", "The hot dog", "Kirkland"]), ["0:00 The $65 ticket", "1:35 The hot dog", "10:12 Kirkland"]);
+});
+
+test("the cover prompt's example is a valid drawing, and the prompt fills it in", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { checkDrawing } = await import("./bots/draw.ts");
+  const { fill } = await import("./bots/claude-bots.ts");
+  const example = readFileSync(join(P.ROOT, "prompts", "cover-example.tsx"), "utf8");
+  assert.deepEqual(checkDrawing(example), []);
+  const prompt = fill("cover", { title: "T", example });
+  assert.ok(prompt.includes("export default function Cover") && !/\{\{\w+\}\}/.test(prompt));
 });

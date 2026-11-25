@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import { existsSync, mkdirSync, renameSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import * as P from "./project.ts";
+import { musicDirFor, musicFiles } from "./music.ts";
 import type { ChatMsg, Gate, State, Step } from "./project.ts";
 
 export const BOTS: { id: Step; name: string; role: string }[] = [
@@ -170,13 +171,13 @@ export class Office extends EventEmitter {
       this.say(role("render").name, `Final video saved at projects/${id}/out.mp4 — ready to post.`, id);
       if (this.afterApprove) {
         const ray = role("render").name;
-        this.say(ray, "Making 3 thumbnails for YouTube Shorts and Reels…", id);
+        this.say(ray, s.layout === "long" ? "Making 3 thumbnails, then cutting each chapter into a Short…" : "Making 3 thumbnails for YouTube Shorts and Reels…", id);
         this.afterApprove({ state: P.load(id), activity: () => {}, signal: new AbortController().signal })
           .then((summary) => {
             this.update(id, () => {}); // bumps updated_at so the files list picks the thumbnails up
             this.say(ray, summary, id);
           })
-          .catch((e) => this.say(ray, `I couldn't make the thumbnails: ${(e as Error).message}`, id));
+          .catch((e) => this.say(ray, `I couldn't finish the thumbnails${s.layout === "long" ? " and Shorts" : ""}: ${(e as Error).message}`, id));
       }
     }
   }
@@ -229,6 +230,16 @@ export class Office extends EventEmitter {
     this.say("You", `Redo from ${role(step).name}${note ? `: ${note}` : "."}`, id);
     this.emitEvent({ type: "handoff", from: step, to: step, project: id, color: s.color });
     setTimeout(() => this.enqueue(id, step), this.handoffMs);
+  }
+
+  // Picks this video's track (a file in its music folder, "off", or undefined = back to .env) and re-renders only;
+  // the picture, voice and drawings are kept. shortcut: a long video gets that one track in every chapter.
+  music(id: string, music?: string) {
+    const s = P.load(id);
+    if (music && music !== "off" && !musicFiles(musicDirFor(s.layout)).includes(music)) throw new Error(`there's no ${music} in the music folder`);
+    this.assertIdle(s);
+    this.update(id, (x) => (x.music = music));
+    this.redo(id, "render", `music: ${music === "off" ? "none" : (music ?? "default")}`);
   }
 
   // Moves the project folder to projects/_archive/ (nothing is deleted).

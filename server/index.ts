@@ -1,15 +1,16 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { createReadStream, existsSync, statSync } from "node:fs";
-import { join, normalize, extname } from "node:path";
+import { join, normalize, extname, relative } from "node:path";
 import { createServer as createVite } from "vite";
 import react from "@vitejs/plugin-react";
 import { Office, type OfficeEvent } from "./office.ts";
 import { readdirSync } from "node:fs";
-import { LAYOUTS, PROJECTS, ROOT, STEPS, dir, listArchived, type Step } from "./project.ts";
+import { LAYOUTS, PROJECTS, ROOT, STEPS, dir, listArchived, load, type Step } from "./project.ts";
 import { ScriptShape } from "./schemas.ts";
 import { writeScript } from "./bots/claude-bots.ts";
 import { z } from "zod";
-import { jobs, thumbs } from "./bots/index.ts";
+import { afterApprove, jobs } from "./bots/index.ts";
+import { MUSIC_DIR, musicDirFor, musicFiles } from "./music.ts";
 
 try {
   process.loadEnvFile(join(ROOT, ".env"));
@@ -19,7 +20,7 @@ const PORT = Number(process.env.PORT || 4321);
 // Localhost only: the bots run Claude with web tools on this machine.
 const HOST = "127.0.0.1";
 
-const office = new Office(jobs, undefined, thumbs);
+const office = new Office(jobs, undefined, afterApprove);
 const clients = new Set<ServerResponse>();
 office.on("event", (e: OfficeEvent) => {
   for (const c of clients) c.write(`data: ${JSON.stringify(e)}\n\n`);
@@ -40,12 +41,12 @@ async function body(req: IncomingMessage): Promise<any> {
   return raw ? JSON.parse(raw) : {};
 }
 
-const TYPES: Record<string, string> = { ".mp4": "video/mp4", ".md": "text/markdown; charset=utf-8", ".json": "application/json", ".png": "image/png", ".jpeg": "image/jpeg", ".wav": "audio/wav" };
+const TYPES: Record<string, string> = { ".mp4": "video/mp4", ".md": "text/markdown; charset=utf-8", ".json": "application/json", ".png": "image/png", ".jpeg": "image/jpeg", ".wav": "audio/wav", ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".flac": "audio/flac", ".txt": "text/plain; charset=utf-8" };
 
-// Serves files from projects/ (gate previews); supports Range so the video can seek.
-function serveFile(req: IncomingMessage, res: ServerResponse, rel: string) {
-  const path = normalize(join(PROJECTS, decodeURIComponent(rel)));
-  if (!path.startsWith(PROJECTS + "/") || !existsSync(path)) return send(res, 404, { error: "not found" });
+// Serves files from projects/ (gate previews) or the music folder (track previews); supports Range so media can seek.
+function serveFile(req: IncomingMessage, res: ServerResponse, rel: string, base = PROJECTS) {
+  const path = normalize(join(base, decodeURIComponent(rel)));
+  if (!path.startsWith(base + "/") || !existsSync(path) || !statSync(path).isFile()) return send(res, 404, { error: "not found" });
   const size = statSync(path).size;
   const type = TYPES[extname(path)] ?? "application/octet-stream";
   const m = /bytes=(\d*)-(\d*)/.exec(req.headers.range ?? "");
@@ -70,6 +71,7 @@ const server = createServer(async (req, res) => {
       return;
     }
     if (url.pathname.startsWith("/files/")) return serveFile(req, res, url.pathname.slice("/files/".length));
+    if (url.pathname.startsWith("/music/")) return serveFile(req, res, url.pathname.slice("/music/".length), MUSIC_DIR);
     if (req.method === "GET" && url.pathname === "/api/archived") return send(res, 200, { projects: listArchived() });
     if (req.method === "GET" && url.pathname === "/api/files") {
       const id = String(url.searchParams.get("id") ?? "");
@@ -78,6 +80,12 @@ const server = createServer(async (req, res) => {
         .filter((f) => !/(^|\/)(state\.json|chat\.jsonl)$|\.tmp$/.test(f) && statSync(dir(id, f)).isFile())
         .sort();
       return send(res, 200, { files });
+    }
+    // The tracks this project can switch to (its layout's music folder) and the one picked for it, if any.
+    if (req.method === "GET" && url.pathname === "/api/music") {
+      const s = load(String(url.searchParams.get("id") ?? ""));
+      const folder = musicDirFor(s.layout);
+      return send(res, 200, { files: musicFiles(folder), current: s.music ?? null, served: `/music/${relative(MUSIC_DIR, folder)}/`.replace("//", "/") });
     }
     if (req.method === "POST" && url.pathname.startsWith("/api/")) {
       const b = await body(req);
@@ -122,6 +130,9 @@ const server = createServer(async (req, res) => {
           office.saveScript(id, () => writeScript(id, parsed.data));
           return send(res, 200, { ok: true });
         }
+        case "/api/music":
+          office.music(String(b.id), b.music ? String(b.music) : undefined);
+          return send(res, 200, { ok: true });
         case "/api/retry":
           office.retry(String(b.id));
           return send(res, 200, { ok: true });

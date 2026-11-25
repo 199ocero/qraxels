@@ -95,7 +95,10 @@ export const voice: Job = async ({ state, activity, signal }) => {
   };
   writeJson(scenesPath, voiced);
   const secs = voiced.scenes.at(-1)!.end!;
-  const warn = secs < 60 ? " Heads up: under 60s, too short for TikTok Creator Rewards." : secs > 125 ? " Heads up: over 2 minutes." : "";
+  const warn =
+    state.layout === "long"
+      ? secs < 480 ? " Heads up: under 8 minutes, so YouTube won't allow mid-roll ads." : ""
+      : secs < 60 ? " Heads up: under 60s, too short for TikTok Creator Rewards." : secs > 125 ? " Heads up: over 2 minutes." : "";
   return `Narration recorded: ${secs.toFixed(1)}s, ${r.words.length} words timed.${warn}`;
 };
 

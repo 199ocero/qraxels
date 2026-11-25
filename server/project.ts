@@ -14,7 +14,8 @@ export const GATE_AFTER: Partial<Record<Step, Gate>> = { script: "script", rende
 // Every video renders in the black-and-white "mono" look. "mono" is a fired-up motivation speech; "explained" is a calm
 // explainer (one idea, its context, an example, what to do) with gentler cuts and piano music; "built" is the same calm
 // style for history and engineering ("how was it built / how did it work"), with its own script (prompts/script-built.md).
-export const LAYOUTS = ["explained", "mono", "built"] as const;
+// "long" is a 16:9 explained video of 8–10 minutes in chapters (prompts/script-long.md), shown split screen.
+export const LAYOUTS = ["explained", "mono", "built", "long"] as const;
 export type Layout = (typeof LAYOUTS)[number];
 
 export type State = {
@@ -26,6 +27,8 @@ export type State = {
   gate: Gate | null;
   approved: boolean;
   notes: Partial<Record<Step, string>>;
+  // A track picked for this video (a file in its music folder, or "off"); unset = MONO_MUSIC / EXPLAINED_MUSIC.
+  music?: string;
   created_at: string;
   updated_at: string;
 };

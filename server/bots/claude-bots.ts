@@ -2,8 +2,8 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Job } from "../office.ts";
 import { ROOT, dir, list, load, readJson, writeJson, type State } from "../project.ts";
-import { EXPLAINED_SECTIONS, ExplainedScript, HISTORY, LABELED, SECTIONS, Script, Scenes } from "../schemas.ts";
-import { OPUS, runClaude } from "../claude.ts";
+import { EXPLAINED_SECTIONS, ExplainedScript, FactCheck, HISTORY, LABELED, LongScript, SECTIONS, Script, Scenes, chaptersOf, type Scene } from "../schemas.ts";
+import { OPUS, SONNET, runClaude } from "../claude.ts";
 import { rand, seedOf } from "../../remotion/mono.ts";
 
 // prompts/script-mono.md (layout) wins over script.md; review.md has no variant.
@@ -64,21 +64,68 @@ export const script: Job = async ({ state, note, activity, signal }) => {
   const avoid = past.length ? `Lines from this channel's earlier videos. Do NOT reuse any of them, their structure, or any 5-word run from them; viewers have already heard these:\n${past.flatMap(lines).map((l) => `- ${l}`).join("\n")}\n` : "";
   const n = pastMono(state, "state.json").length;
   const angle = state.layout === "built" ? BUILT_ANGLES[n % BUILT_ANGLES.length] : ANGLES[n % ANGLES.length];
-  const [schema, order] = state.layout === "mono" ? [Script, SECTIONS] : [ExplainedScript, EXPLAINED_SECTIONS];
-  const s = await runClaude({
-    model: OPUS,
-    prompt: fill("script", { topic: state.topic, avoid, angle }, note, ...variantsOf(state)),
-    schema: schema.superRefine((x, ctx) => {
-      const copied = [...runs(x.beats.map((b) => b.narration).join(" "))].filter((k) => used.has(k));
-      if (copied.length) ctx.addIssue({ code: "custom", path: ["beats"], message: `these phrases repeat earlier videos; rewrite those lines with new words: ${copied.map((c) => `"${c}"`).join(", ")}` });
-      if (!fullWave(x.beats.map((b) => b.section), order)) ctx.addIssue({ code: "custom", path: ["beats"], message: `tag every beat with a section; use all of ${order.join(" → ")} in that order, ending on ${order.at(-1)}` });
-    }),
+  // Long videos are paced by their chapters instead of one section wave.
+  const [schema, order] = state.layout === "mono" ? [Script, SECTIONS] : state.layout === "long" ? [LongScript, null] : [ExplainedScript, EXPLAINED_SECTIONS];
+  const write = (fix?: string) =>
+    runClaude({
+      model: OPUS,
+      prompt: fill("script", { topic: state.topic, avoid, angle }, [note, fix].filter(Boolean).join("\n\n") || undefined, ...variantsOf(state)),
+      schema: schema.superRefine((x, ctx) => {
+        const copied = [...runs(x.beats.map((b) => b.narration).join(" "))].filter((k) => used.has(k));
+        if (copied.length) ctx.addIssue({ code: "custom", path: ["beats"], message: `these phrases repeat earlier videos; rewrite those lines with new words: ${copied.map((c) => `"${c}"`).join(", ")}` });
+        if (order && !fullWave(x.beats.map((b) => b.section), order)) ctx.addIssue({ code: "custom", path: ["beats"], message: `tag every beat with a section; use all of ${order.join(" → ")} in that order, ending on ${order.at(-1)}` });
+      }),
+      onActivity: activity,
+      signal,
+    });
+  let s = await write();
+  rmSync(dir(state.id, "factcheck.json"), { force: true });
+  let checked = "";
+  // The calm styles state facts from memory: check each flagged claim on the web; a wrong one goes back to Sky once.
+  if (state.layout !== "mono" && s.flagged_claims.length) {
+    try {
+      let fc = await factCheck(state.topic, s, activity, signal);
+      const wrong = fc.claims.filter((c) => c.verdict === "wrong");
+      if (wrong.length) {
+        activity(`fixing ${wrong.length} wrong claim(s)`);
+        s = await write(`A fact check found these claims wrong. Fix every line that uses one: state the correction instead, or cut the claim if it no longer fits:\n${wrong.map((c) => `- "${c.claim}" → ${c.correction ?? "remove it"}`).join("\n")}`);
+        fc = s.flagged_claims.length ? await factCheck(state.topic, s, activity, signal) : { claims: [] };
+      }
+      writeJson(dir(state.id, "factcheck.json"), fc);
+      const n = (v: string) => fc.claims.filter((c) => c.verdict === v).length;
+      checked = ` Fact check: ${n("confirmed")} confirmed${wrong.length ? `, ${wrong.length} fixed` : ""}${n("unsure") ? `, ${n("unsure")} unsure` : ""}${n("wrong") ? `, ${n("wrong")} STILL WRONG` : ""} (see script.md).`;
+    } catch (e) {
+      if (signal.aborted) throw e;
+      checked = ` The fact check didn't run (${(e as Error).message.slice(0, 80)}), so check the flagged claims yourself.`;
+    }
+  }
+  const secs = writeScript(state.id, s);
+  const parts = chaptersOf(s).length ? `, ${chaptersOf(s).length} chapters` : "";
+  return `Script "${s.title}" is ready: ~${secs}s, ${s.beats.length} beats${parts}, ${s.flagged_claims.length} claims flagged.${checked}`;
+};
+
+// Checks each flagged claim with web search (Sonnet: it's lookup work, not writing).
+async function factCheck(topic: string, s: Script, activity: (l: string) => void, signal: AbortSignal): Promise<FactCheck> {
+  activity(`checking ${s.flagged_claims.length} facts`);
+  return runClaude({
+    model: SONNET,
+    prompt: fill("factcheck", { topic, claims: s.flagged_claims.map((c, i) => `${i + 1}. ${c}`).join("\n"), script: s.beats.map((b) => b.narration).join(" ") }),
+    schema: FactCheck,
+    tools: ["WebSearch", "WebFetch"],
     onActivity: activity,
     signal,
   });
-  const secs = writeScript(state.id, s);
-  return `Script "${s.title}" is ready: ~${secs}s, ${s.beats.length} beats, ${s.flagged_claims.length} claims flagged.`;
-};
+}
+
+// The fact check's verdict on a claim, for script.md; a claim edited by hand since then shows as not checked.
+function verdictOf(id: string, claim: string): string {
+  const f = dir(id, "factcheck.json");
+  if (!existsSync(f)) return "";
+  const c = readJson<FactCheck>(f).claims.find((x) => x.claim.trim() === claim.trim());
+  if (!c) return "[not checked] ";
+  const src = c.source ? ` (source: ${c.source})` : "";
+  return c.verdict === "confirmed" ? `[confirmed${src}] ` : c.verdict === "unsure" ? `[UNSURE, nothing reliable found${src}] ` : `[WRONG: ${c.correction ?? "no correction given"}${src}] `;
+}
 
 // Writes script.json plus the readable script.md; returns the spoken length in seconds.
 export function writeScript(id: string, s: Script): number {
@@ -93,12 +140,17 @@ export function writeScript(id: string, s: Script): number {
       "",
       `~${secs}s spoken (${words} words) · analogy: ${s.analogy}`,
       "",
-      ...s.beats.flatMap((b, i) => [`${i + 1}. ${b.section ? `[${b.section}] ` : ""}${b.narration}`, `   on screen: ${b.visual_idea}`, ""]),
+      ...s.beats.flatMap((b, i) => [
+        ...(b.chapter && b.chapter !== s.beats[i - 1]?.chapter ? [`## ${chaptersOf(s).indexOf(b.chapter) + 1}. ${b.chapter}`, ""] : []),
+        `${i + 1}. ${b.section ? `[${b.section}] ` : ""}${b.narration}`,
+        `   on screen: ${b.visual_idea}`,
+        "",
+      ]),
       "## Where the analogy breaks down",
       s.analogy_breaks_down,
       "",
       "## Flagged claims (check these)",
-      ...(s.flagged_claims.length ? s.flagged_claims.map((c) => `- ${c}`) : ["- none"]),
+      ...(s.flagged_claims.length ? s.flagged_claims.map((c) => `- ${verdictOf(id, c)}${c}`) : ["- none"]),
     ].join("\n") + "\n",
   );
   return secs;
@@ -138,11 +190,13 @@ export function componentsFor(md: string, layout: string): string {
     .join("\n");
 }
 
+const normShot = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
 // The calm styles show a library picture only once per video and draw everything else from its shot, so no scene is
 // the same stock picture with a new label. `shown`: label-only pictures the last videos showed, drawn instead too.
-export function calmIssues(scenes: { component: string; shot?: string }[], shown = new Set<string>()): string[] {
+export function calmIssues(scenes: { component: string; shot?: string }[], shown = new Set<string>(), most = 2): string[] {
   const out: string[] = [];
-  const shots = scenes.flatMap((s) => (s.shot ? [s.shot.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()] : []));
+  const shots = scenes.flatMap((s) => (s.shot ? [normShot(s.shot)] : []));
   const dup = shots.filter((x, i) => shots.indexOf(x) !== i);
   if (dup.length) out.push(`these shots repeat; every scene needs its own picture: ${[...new Set(dup)].map((d) => `"${d.slice(0, 60)}"`).join(", ")}`);
   const lib = scenes.filter((s) => !s.shot).map((s) => s.component);
@@ -152,9 +206,127 @@ export function calmIssues(scenes: { component: string; shot?: string }[], shown
   if (stale.length) out.push(`the last videos already showed ${stale.join(", ")}; write a shot for those scenes instead`);
   const counts = new Map<string, number>();
   for (const s of scenes) counts.set(s.component, (counts.get(s.component) ?? 0) + 1);
-  const over = [...counts].filter(([, n]) => n > 2).map(([c, n]) => `${c} (${n}x)`);
-  if (over.length) out.push(`no component more than twice, counting fallbacks: ${over.join(", ")}`);
+  const over = [...counts].filter(([, n]) => n > most).map(([c, n]) => `${c} (${n}x)`);
+  if (over.length) out.push(`no component more than ${most} times, counting fallbacks: ${over.join(", ")}`);
   return out;
+}
+
+// Long videos: each chapter's scenes hold exactly that chapter's narration, in order, so a chapter cuts cleanly into a Short.
+export function chapterIssues(s: Script, scenes: { chapter?: number; narration: string }[]): string[] {
+  const titles = chaptersOf(s);
+  if (scenes.some((x) => !x.chapter || x.chapter > titles.length)) return [`give every scene its chapter number, 1 to ${titles.length}`];
+  if (scenes.some((x, i) => i > 0 && x.chapter! < scenes[i - 1].chapter!)) return ["chapter numbers must never go back down"];
+  const text = (t: string) => norm(t).join(" ");
+  return titles.flatMap((t, k) => {
+    const want = text(s.beats.filter((b) => b.chapter === t).map((b) => b.narration).join(" "));
+    const got = text(scenes.filter((x) => x.chapter === k + 1).map((x) => x.narration).join(" "));
+    return want === got ? [] : [`chapter ${k + 1} ("${t}"): its scenes must hold exactly that chapter's narration, word for word`];
+  });
+}
+
+// What a chapter repeats from the chapters before it (chapter index → issues); the earlier chapter keeps it.
+export function chapterClashes(parts: { component: string; shot?: string }[][], most = 3): Map<number, string[]> {
+  const out = new Map<number, string[]>();
+  const shots = new Map<string, number>();
+  const lib = new Map<string, number>();
+  const counts = new Map<string, number>();
+  let gym = 0;
+  parts.forEach((scenes, k) => {
+    const bad = new Set<string>();
+    for (const x of scenes) {
+      const [seen, key] = x.shot ? [shots, normShot(x.shot)] : [lib, x.component];
+      const j = seen.get(key);
+      if (j === undefined) seen.set(key, k);
+      else if (j !== k) bad.add(x.shot ? `your shot "${x.shot.slice(0, 60)}" repeats one in chapter ${j + 1}; draw a new picture` : `chapter ${j + 1} already shows the library picture ${x.component}; write a shot for that scene instead`);
+      const n = (counts.get(x.component) ?? 0) + 1;
+      counts.set(x.component, n);
+      if (n > most) bad.add(`${x.component} is already used ${most} times in the chapters before yours (counting fallbacks); pick other components`);
+      if (GYM.includes(x.component) && ++gym > 2) bad.add(`the video already has 2 workout scenes; no ${x.component}`);
+    }
+    if (bad.size) out.set(k, [...bad]);
+  });
+  return out;
+}
+
+// Splits a whole-video budget across n chapters as evenly as it goes (6 over 7 → 0,1,1,1,1,1,1).
+export const spread = (total: number, n: number) => Array.from({ length: n }, (_, k) => Math.floor(((k + 1) * total) / n) - Math.floor((k * total) / n));
+
+// The chapters as one video: chapter numbers, the hook/payoff/outro, the hit and sfx caps, no camera twice in a row.
+export function stitch(parts: Scene[][]): Scene[] {
+  const all = parts.flatMap((p, k) => p.map((x) => ({ ...x, chapter: k + 1 })));
+  let hits = 0;
+  let sfx = 0;
+  const out = all.map((x, i) => {
+    const y = { ...x };
+    const first2 = y.chapter === 2 && all[i - 1]?.chapter === 1;
+    y.purpose = i === 0 ? "hook" : first2 ? "payoff" : y.purpose === "setup" ? "setup" : "explain";
+    if (y.hit && ++hits > 6) delete y.hit;
+    if (y.sfx && ++sfx > 4) delete y.sfx;
+    if (i && y.camera && y.camera === all[i - 1].camera) delete y.camera;
+    return y;
+  });
+  const last = out.at(-1)!;
+  Object.assign(last, { purpose: "outro", camera: "pull" });
+  delete last.hit;
+  return out;
+}
+
+// Long videos: one director call per chapter, all at once, stitched in order. A chapter that clashes with an
+// earlier one (a repeated shot or picture, a component over 3 times) is planned again on its own, seeing the others.
+async function longScenes(s: Script, vars: Record<string, string>, pal: ReturnType<typeof paletteFor>, shown: Set<string>, note: string | undefined, activity: (l: string) => void, signal: AbortSignal): Promise<Scenes> {
+  const titles = chaptersOf(s);
+  const n = titles.length;
+  const [hits, sfx] = [spread(6, n), spread(4, n)];
+  const said = (k: number) => s.beats.filter((b) => b.chapter === titles[k]).map((b) => b.narration).join(" ");
+  const plan = (k: number, fix?: string) => {
+    const words = said(k).split(/\s+/).length;
+    const part = [
+      `You plan ONLY chapter ${k + 1} of ${n}: "${titles[k]}". Other directors plan the other chapters at the same time, so keep to this chapter's budget:`,
+      `- Its narration, which your scenes split word for word, in order: ${said(k)}`,
+      `- About ${Math.round(words / 20)}–${Math.round(words / 13)} scenes.`,
+      `- hit: at most ${hits[k]}. sfx: at most ${sfx[k]}. BigWord: ${k === 0 ? "at most 1" : "none"}. Callout: at most 1.`,
+      k === 0 ? "- Its first scene opens the whole video." : "- Its first scene follows another chapter, so it must read without context.",
+      k === n - 1 ? "- Its last scene ends the whole video (see the ending rule)." : "- Its last scene ends this chapter, not the video.",
+    ].join("\n");
+    const feat = pal.featured[k];
+    const palette = `This video's look (so it doesn't cut like the last ones):\n${k === 0 ? `- FIRST scene: ${pal.open}\n` : ""}${k === n - 1 ? `- LAST scene: ${pal.close}\n` : ""}${feat ? `- Feature ${feat} in this chapter (as the picture, or the fallback of a drawn scene)\n` : ""}- Workout scenes (${GYM.join(", ")}): at most 1, and only if the line is literally about exercise.\n`;
+    return runClaude({
+      model: OPUS,
+      prompt: fill("scenes", { ...vars, part, palette }, [note, fix].filter(Boolean).join("\n\n") || undefined, "long"),
+      schema: Scenes.superRefine((x, ctx) => {
+        const bad = (message: string) => ctx.addIssue({ code: "custom", path: ["scenes"], message });
+        if (norm(x.scenes.map((y) => y.narration).join(" ")).join(" ") !== norm(said(k)).join(" ")) bad("your scenes must hold exactly this chapter's narration, word for word, in order");
+        calmIssues(x.scenes, shown, 3).forEach(bad);
+        const c = x.scenes.map((y) => y.component);
+        if (k === 0 && c[0] !== pal.open) bad(`the first scene must be ${pal.open}`);
+        if (k === n - 1 && c.at(-1) !== pal.close) bad(`the last scene must be ${pal.close}`);
+        if (feat && !c.includes(feat as never)) bad(`feature ${feat} in this chapter`);
+      }),
+      onActivity: (l) => activity(`chapter ${k + 1}: ${l}`),
+      signal,
+    }).then((r) => r.scenes);
+  };
+  let done = 0;
+  const parts = await Promise.all(titles.map((_, k) => plan(k).finally(() => activity(`planned ${++done} of ${n} chapters`))));
+  for (let round = 1; ; round++) {
+    const clash = chapterClashes(parts);
+    if (!clash.size) break;
+    if (round > 2) throw new Error(`the chapters still repeat each other after 2 fixes: ${[...clash].map(([k, m]) => `chapter ${k + 1}: ${m[0]}`).join("; ").slice(0, 500)}`);
+    // One at a time, so each fix sees the others' latest plans.
+    for (const k of clash.keys()) {
+      const now = chapterClashes(parts).get(k);
+      if (!now) continue; // an earlier fix this round already cleared it
+      activity(`re-planning chapter ${k + 1} (it repeats another chapter)`);
+      const others = parts.flatMap((p, j) => (j === k ? [] : p));
+      const fix = `Your last plan clashed with the other chapters:\n${now.map((m) => `- ${m}`).join("\n")}\nThe other chapters already use these components: ${[...new Set(others.map((x) => x.component))].join(", ")}.\nTheir shots (don't repeat them):\n${others.flatMap((x) => (x.shot ? [`- ${x.shot.slice(0, 90)}`] : [])).join("\n")}`;
+      parts[k] = await plan(k, fix);
+    }
+  }
+  const scenes = stitch(parts);
+  // The stitched video must pass the same checks a one-call plan did.
+  const issues = [...calmIssues(scenes, shown, 3), ...chapterIssues(s, scenes)];
+  if (issues.length) throw new Error(`the stitched plan has problems: ${issues.join("; ").slice(0, 500)}`);
+  return { scenes };
 }
 
 export const scenes: Job = async ({ state, note, activity, signal }) => {
@@ -171,9 +343,10 @@ export const scenes: Job = async ({ state, note, activity, signal }) => {
   const palette = built
     ? `This video's look: open on the structure or object itself and end on it finished or still standing. Prefer the history and engineering pictures; use a Timeline when the script moves through dates. Workout scenes (${GYM.join(", ")}): none.\n`
     : `This video's look (so it doesn't cut like the last ones):\n- FIRST scene: ${pal.open}\n- LAST scene: ${pal.close}\n- Feature at least 4 of: ${pal.featured.join(", ")}\n- Workout scenes (${GYM.join(", ")}): at most 2 in the whole video.\n`;
-  const out = await runClaude({
+  const vars = { topic: state.topic, script: JSON.stringify(s, null, 1), palette, components: componentsFor(readFileSync(join(ROOT, "prompts", "components.md"), "utf8"), state.layout), recent: recentText };
+  const out = state.layout === "long" ? await longScenes(s, vars, pal, shown, note, activity, signal) : await runClaude({
     model: OPUS,
-    prompt: fill("scenes", { topic: state.topic, script: JSON.stringify(s, null, 1), palette, components: componentsFor(readFileSync(join(ROOT, "prompts", "components.md"), "utf8"), state.layout), recent: recentText }, note, ...variantsOf(state)),
+    prompt: fill("scenes", vars, note, ...variantsOf(state)),
     schema: Scenes.superRefine((x, ctx) => {
       const c = x.scenes.map((y) => y.component);
       const bad = (message: string) => ctx.addIssue({ code: "custom", path: ["scenes"], message });
