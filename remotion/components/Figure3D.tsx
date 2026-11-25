@@ -1,3 +1,4 @@
+import { useId } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import type { Pt } from "./Mono.tsx";
@@ -177,9 +178,26 @@ export function figure3d(j: Joints, trail: Joints[], view: View, color: string, 
 
 // A 3D layer in a drawing: `scene` seen by `camera`, drawn into `box` (stage(t), or a box from split/row). Build the
 // scene fresh every frame from useCurrentFrame(); it's lit for you and freed after. A perspective camera's aspect is
-// set to the box's. `glow` puts the scene's glow filter on the whole layer.
+// set to the box's. `glow` puts the scene's glow filter on the whole layer. The layer's edges fade out, so a sea or
+// floor that runs past the view melts into the background instead of ending in a hard grey rectangle.
 type Box = { left: number; top: number; width: number; height: number };
 export function Three({ box, scene, camera, glow = false, opacity = 1 }: { box: Box; scene: THREE.Scene; camera: THREE.Camera; glow?: boolean; opacity?: number }) {
+  const id = `three${useId().replace(/[^\w-]/g, "")}`;
   const href = snap(scene, camera, box.width, box.height, Math.min(1.25, 2400 / Math.max(box.width, box.height)));
-  return <image href={href} x={box.left} y={box.top} width={box.width} height={box.height} opacity={opacity} filter={glow ? "url(#glow)" : undefined} />;
+  const fe = Math.min(box.width, box.height) * 0.09; // feather width
+  return (
+    <>
+      <defs>
+        <filter id={`${id}b`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation={fe / 2} />
+        </filter>
+        <mask id={`${id}m`} maskUnits="userSpaceOnUse" x={box.left} y={box.top} width={box.width} height={box.height}>
+          <rect x={box.left + fe} y={box.top + fe} width={box.width - 2 * fe} height={box.height - 2 * fe} fill="#fff" filter={`url(#${id}b)`} />
+        </mask>
+      </defs>
+      <g mask={`url(#${id}m)`}>
+        <image href={href} x={box.left} y={box.top} width={box.width} height={box.height} opacity={opacity} filter={glow ? "url(#glow)" : undefined} />
+      </g>
+    </>
+  );
 }
