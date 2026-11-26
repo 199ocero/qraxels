@@ -4,7 +4,7 @@ import { bundle } from "@remotion/bundler";
 import { makeCancelSignal, openBrowser, renderMedia, renderStill, selectComposition, type RenderMediaOptions } from "@remotion/renderer";
 import type { Job } from "../office.ts";
 import { ROOT, dir, readJson, writeJson, type Layout, type State } from "../project.ts";
-import { Review, chaptersOf, type Scene, type Script } from "../schemas.ts";
+import { Review, chaptersOf, type FactCheck, type Scene, type Script } from "../schemas.ts";
 import { OPUS, runClaude } from "../claude.ts";
 import { fill } from "./claude-bots.ts";
 import { readVoiced, run, type VoicedScenes } from "./voice.ts";
@@ -256,14 +256,17 @@ export const render: Job = async ({ state, activity, signal }) => {
     // CC BY music must be credited in the post's description (every chapter's track in a long video).
     const credit = [...new Set([props.music, ...(props.chapterMusic ?? [])].flatMap((t) => (t?.credit ? [t.credit] : [])))].join("\n");
     if (credit) writeFileSync(dir(state.id, "credits.txt"), `${credit}\n`);
-    // A long video's YouTube description: the chapter timestamps (they turn on chapters in YouTube's player) and credits.
-    if (props.wide && props.chapters?.length) {
-      const title = readJson<Script>(dir(state.id, "script.json")).title;
-      writeFileSync(dir(state.id, "description.txt"), [title, "", "Chapters", ...chapterTimestamps(props.scenes, props.chapters), ...(credit ? ["", "Music", credit] : [])].join("\n") + "\n");
+    // The calm styles' YouTube description: chapter timestamps for a long video (they turn on chapters in YouTube's
+    // player), the fact check's sources, the credits and the channel's disclaimer.
+    const described = state.layout !== "mono";
+    if (described) {
+      const fc = existsSync(dir(state.id, "factcheck.json")) ? readJson<FactCheck>(dir(state.id, "factcheck.json")) : { claims: [] };
+      const chapters = props.wide && props.chapters?.length ? chapterTimestamps(props.scenes, props.chapters) : [];
+      writeFileSync(dir(state.id, "description.txt"), videoDescription(readJson<Script>(dir(state.id, "script.json")).title, chapters, fc, credit, state.layout !== "built"));
     }
     const songs = props.chapterMusic?.length ? props.chapterMusic : props.music ? [props.music] : [];
     const song = songs.length ? ` Music: ${[...new Set(songs.map((t) => t.src.split("/").pop()))].join(", ")}.` : " No music (add a sound in TikTok).";
-    const desc = props.wide && props.chapters?.length ? " The YouTube description with chapter timestamps is in description.txt." : credit ? ` Put this in the description: ${credit}` : "";
+    const desc = described ? " The YouTube description (sources, credits and chapters for a long video) is in description.txt." : credit ? ` Put this in the description: ${credit}` : "";
     return `Video rendered: ${(composition.durationInFrames / FPS).toFixed(1)}s, ${composition.width}x${composition.height}.${song}${desc}`;
   } finally {
     dropBundle(serveUrl);
@@ -304,6 +307,21 @@ export async function shortCover(serveUrl: string, video: ExplainerProps, title:
   await renderStill({ serveUrl, composition, inputProps, chromiumOptions, envVariables, frame: frames[1] ?? frames[0], output, imageFormat: "jpeg", jpegQuality: 90 });
 }
 
+// A video's YouTube description. Sources are the fact check's confirmed ones: showing them is what sets a researched
+// explainer apart from template-made content.
+export function videoDescription(title: string, chapters: string[], fc: FactCheck, credit: string, disclaimer: boolean): string {
+  const sources = [...new Set(fc.claims.flatMap((c) => (c.verdict === "confirmed" && c.source ? [c.source] : [])))];
+  return [
+    title,
+    ...(chapters.length ? ["", "Chapters", ...chapters] : []),
+    ...(sources.length ? ["", "Sources", ...sources] : []),
+    ...(credit ? ["", "Music", credit] : []),
+    ...(disclaimer ? ["", "For educational purposes only. Not financial advice."] : []),
+  ].join("\n") + "\n";
+}
+
+const quoted = (ts: string[]) => ts.map((t) => `"${t}"`).join(", ");
+
 // A Short's YouTube description: its title, its opening line (chapters open cold, so it's the hook), where the full
 // video is, and its track's credit.
 export function shortDescription(short: ExplainerProps, title: string, videoTitle: string): string {
@@ -323,7 +341,7 @@ export const shorts: Job = async ({ state, activity, signal }) => {
     rmSync(out, { recursive: true, force: true });
     mkdirSync(out, { recursive: true });
     activity(`drawing ${titles.length} Short covers`);
-    const covers = await Promise.all(titles.map((t, i) => drawCover(state, `short-${i + 1}`, t, video.scenes.filter((s) => s.chapter === i + 1).map((s) => s.narration ?? ""), false, signal, titles.filter((_, j) => j !== i))));
+    const covers = await Promise.all(titles.map((t, i) => drawCover(state, `short-${i + 1}`, t, video.scenes.filter((s) => s.chapter === i + 1).map((s) => s.narration ?? ""), false, signal, `This is one Short in a series cut from one video; the others are titled: ${quoted(titles.filter((_, j) => j !== i))}. They get their own covers, so build yours on what is distinctive in YOUR lines: never their hero or their words, even when your lines mention them.`)));
     const { cancelSignal, cancel } = makeCancelSignal();
     signal.addEventListener("abort", cancel);
     for (const [i, title] of titles.entries()) {
@@ -349,7 +367,7 @@ export const shorts: Job = async ({ state, activity, signal }) => {
       await shortCover(serveUrl, inputProps, title, join(out, `short-${i + 1}.jpeg`), covers[i] ?? undefined);
     }
     writeFileSync(join(out, "titles.txt"), titles.map((t, i) => `short-${i + 1}.mp4  ${t}`).join("\n") + "\n");
-    return `Cut ${titles.length} Shorts (1080x1920, one per chapter, each ending on "Full video on my channel", each with a drawn short-{n}.jpeg cover and short-{n}.txt description) into projects/${state.id}/shorts/; their titles are in shorts/titles.txt.`;
+    return `Cut ${titles.length} Shorts (1080x1920, one per chapter, each ending on "Full video on my channel", each with a drawn short-{n}.jpeg cover and short-{n}.txt description) into projects/${state.id}/shorts/; their titles are in shorts/titles.txt. When you upload each Short, set its Related video to the full video (in the Short's details), the one link a Shorts viewer can tap.`;
   } finally {
     dropBundle(serveUrl);
   }
@@ -383,12 +401,14 @@ export const thumbs: Job = async ({ state, activity, signal }) => {
   const serveUrl = await bundleFor(dir(state.id), activity, true);
   try {
     const video = propsOf(readVoiced(state.id), state.id, await tracksFor(activity, state), state.layout);
-    const title = readJson<{ title: string }>(dir(state.id, "script.json")).title;
+    const script = readJson<Script>(dir(state.id, "script.json"));
+    const title = script.title;
     const out = dir(state.id, "thumbs");
     rmSync(out, { recursive: true, force: true });
     mkdirSync(out, { recursive: true });
+    const lines = video.scenes.map((s) => s.narration ?? "");
     activity("drawing the thumbnail");
-    const cover = (await drawCover(state, "video", title, video.scenes.map((s) => s.narration ?? ""), !!video.wide, signal)) ?? undefined;
+    const cover = (await drawCover(state, "video", title, lines, !!video.wide, signal)) ?? undefined;
     const frames = cover ? [0] : thumbFrames(video.scenes);
     const inputProps = { video, title, cover };
     const composition = await selectComposition({ serveUrl, id: "Thumbnail", inputProps, chromiumOptions });
@@ -397,6 +417,22 @@ export const thumbs: Job = async ({ state, activity, signal }) => {
       await renderStill({ serveUrl, composition, inputProps, chromiumOptions, envVariables, frame, output: join(out, `thumb-${i + 1}.jpeg`), imageFormat: "jpeg", jpegQuality: 90 });
     }
     const size = video.wide ? "1920x1080, for the YouTube video" : "1080x1920, for YouTube Shorts and Reels";
+    // Long videos: one more drawn cover per alternative title, so YouTube's Test & Compare gets up to 3 title +
+    // thumbnail pairs (it picks by watch time; Shorts can't be tested, so they keep one cover).
+    const alts = video.wide && cover ? (script.alt_titles ?? []).slice(0, 2) : [];
+    const pairs = [`thumb-1.jpeg  ${title}`];
+    for (const [i, alt] of alts.entries()) {
+      activity(`drawing test thumbnail ${i + 2}`);
+      const others = `This is one of ${alts.length + 1} title + thumbnail pairs YouTube tests against each other for the same video; the other titles are ${quoted([title, ...alts].filter((t) => t !== alt))}. Build yours on a different hero or contrast from the opening lines than theirs would, so the test compares real alternatives.`;
+      const c = await drawCover(state, `video-${i + 2}`, alt, lines, true, signal, others);
+      if (!c) continue;
+      await renderStill({ serveUrl, composition, inputProps: { video, title: alt, cover: c }, chromiumOptions, envVariables, frame: 0, output: join(out, `thumb-${pairs.length + 1}.jpeg`), imageFormat: "jpeg", jpegQuality: 90 });
+      pairs.push(`thumb-${pairs.length + 1}.jpeg  ${alt}`);
+    }
+    if (pairs.length > 1) {
+      writeFileSync(join(out, "titles.txt"), pairs.join("\n") + "\n");
+      return `Drew ${pairs.length} title + thumbnail pairs (${size}) in projects/${state.id}/thumbs/, listed in thumbs/titles.txt: upload them all to Test & Compare in YouTube Studio (it keeps the pair people watch longest).`;
+    }
     return cover ? `Drew the thumbnail (${size}): projects/${state.id}/thumbs/thumb-1.jpeg.` : `Made ${frames.length} thumbnails (${size}) in projects/${state.id}/thumbs/.`;
   } finally {
     dropBundle(serveUrl);

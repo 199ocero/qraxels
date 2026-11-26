@@ -735,3 +735,24 @@ test("a facing figure's elbow bends outward: mirrored across shoulder–hand whe
   assert.deepEqual(elbowOut([74, -140], [111, -102], [100, -40], 1), [111, -102]); // already outside: unchanged
   assert.deepEqual(elbowOut([-74, -140], [-60, -90], [-100, -40], -1).map(Math.round), [-111, -103]); // the left arm too
 });
+
+test("video description lists confirmed sources once, chapters, credit and the disclaimer", async () => {
+  const { videoDescription } = await import("./bots/remotion.ts");
+  const fc = { claims: [
+    { claim: "a", verdict: "confirmed" as const, source: "https://sec.gov/x" },
+    { claim: "b", verdict: "confirmed" as const, source: "https://sec.gov/x" },
+    { claim: "c", verdict: "wrong" as const, source: "https://bad.example" },
+    { claim: "d", verdict: "unsure" as const },
+  ] };
+  const d = videoDescription("How X makes money", ["0:00 One"], fc, "Music: Song", true);
+  assert.equal(d, "How X makes money\n\nChapters\n0:00 One\n\nSources\nhttps://sec.gov/x\n\nMusic\nMusic: Song\n\nFor educational purposes only. Not financial advice.\n");
+  assert.equal(videoDescription("T", [], { claims: [] }, "", false), "T\n"); // nothing to add, no empty headers
+});
+
+test("research text dates every fact and tells Sky the research wins", async () => {
+  const { researchText } = await import("./bots/claude-bots.ts");
+  const t = researchText({ news: "The fee rose.", facts: [{ fact: "A card costs $65", date: "Sep 2024", source: "https://x" }] });
+  assert.match(t, /- A card costs \$65 \(Sep 2024\)/);
+  assert.match(t, /What's new: The fee rose\./);
+  assert.match(t, /they win/);
+});

@@ -7,7 +7,7 @@ import { Office, type OfficeEvent } from "./office.ts";
 import { readdirSync } from "node:fs";
 import { LAYOUTS, PROJECTS, ROOT, STEPS, dir, listArchived, load, type Step } from "./project.ts";
 import { ScriptShape } from "./schemas.ts";
-import { writeScript } from "./bots/claude-bots.ts";
+import { pitch, writeScript } from "./bots/claude-bots.ts";
 import { z } from "zod";
 import { afterApprove, jobs } from "./bots/index.ts";
 import { MUSIC_DIR, musicDirFor, musicFiles } from "./music.ts";
@@ -133,6 +133,9 @@ const server = createServer(async (req, res) => {
         case "/api/music":
           office.music(String(b.id), b.music ? String(b.music) : undefined);
           return send(res, 200, { ok: true });
+        // Topic ideas from this week's money news (Sonnet with web search, a minute or two).
+        case "/api/pitch":
+          return send(res, 200, await pitch());
         case "/api/retry":
           office.retry(String(b.id));
           return send(res, 200, { ok: true });

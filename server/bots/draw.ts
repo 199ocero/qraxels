@@ -110,14 +110,14 @@ export async function drawScenes(state: State, v: VoicedScenes, todo: { i: numbe
 // A drawn thumbnail (prompts/cover.md): projects/{id}/covers/{name}.tsx, compiled. An existing file is kept (redraw by
 // deleting it, or edit it by hand); null when it can't be drawn, so the frame-and-title cover is used instead.
 // `others`: the titles of the covers drawn beside this one (a long video's Shorts), so each gets its own idea.
-export async function drawCover(state: State, name: string, title: string, lines: string[], wide: boolean, signal: AbortSignal, others: string[] = []): Promise<string | null> {
+export async function drawCover(state: State, name: string, title: string, lines: string[], wide: boolean, signal: AbortSignal, others = ""): Promise<string | null> {
   const f = dir(state.id, "covers", `${name}.tsx`);
   if (!existsSync(f)) {
     const vars = {
       topic: state.topic,
       title,
       lines: lines.map((l) => `- ${l}`).join("\n"),
-      others: others.length ? `\nThis is one Short in a series cut from one video; the others are titled: ${others.map((t) => `"${t}"`).join(", ")}. They get their own covers, so build yours on what is distinctive in YOUR lines: never their hero or their words, even when your lines mention them.\n` : "",
+      others: others && `\n${others}\n`,
       size: wide ? "1920x1080, the YouTube video's thumbnail" : "1080x1920, the cover of a YouTube Short and a Facebook/Instagram Reel",
       format: wide
         ? "Safe area: keep everything that matters 60 px from the edges, and the bottom-right corner (x > 1650, y > 950) free: YouTube puts the duration there."

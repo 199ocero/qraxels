@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ChatMsg, State } from "../server/project.ts";
+import type { Pitch } from "../server/schemas.ts";
 import { getVersion, sim, subscribe } from "./sim.ts";
 import { api, musicFiles } from "./api.ts";
 
@@ -126,6 +127,8 @@ export function Chat({ project, setProject, onOpen }: { project: string | null; 
   const [topic, setTopic] = useState("");
   const [layout, setLayout] = useState("explained");
   const [error, setError] = useState("");
+  const [ideas, setIdeas] = useState<Pitch["ideas"]>([]);
+  const [pitching, setPitching] = useState(false);
   const end = useRef<HTMLLIElement>(null);
   const chat = project ? sim.chat.filter((m) => m.project === project) : sim.chat;
   const projects = [...sim.projects.values()].sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -151,6 +154,18 @@ export function Chat({ project, setProject, onOpen }: { project: string | null; 
     }
   };
 
+  const suggest = async () => {
+    setPitching(true);
+    setError("");
+    try {
+      setIdeas(((await api("pitch", {})) as Partial<Pitch>).ideas ?? []);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setPitching(false);
+    }
+  };
+
   return (
     <>
       <select className="channel" value={project ?? ""} onChange={(e) => setProject(e.target.value || null)} aria-label="Show chat for">
@@ -168,6 +183,20 @@ export function Chat({ project, setProject, onOpen }: { project: string | null; 
         ))}
         <li ref={end} className="end" />
       </ul>
+      {ideas.length > 0 && (
+        <ul className="ideas" aria-label="Topic ideas">
+          {ideas.map((x) => (
+            <li key={x.title}>
+              <button type="button" onClick={() => (setTopic(x.title), setLayout(x.layout))} title={`First line: ${x.hook}`}>
+                <b>{x.title}</b>
+                <span>
+                  {x.series} · {x.layout === "long" ? "long" : "Short"} · {x.why_now}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <form onSubmit={send}>
         {error && <p className="error">{error}</p>}
         <select value={layout} onChange={(e) => setLayout(e.target.value)} aria-label="Video style">
@@ -179,6 +208,9 @@ export function Chat({ project, setProject, onOpen }: { project: string | null; 
         <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder={project ? "Start another project…" : "Hand a topic to the team…"} maxLength={200} aria-label="New topic" />
         <button type="submit" disabled={!topic.trim()}>
           Send
+        </button>
+        <button type="button" className="suggest" disabled={pitching} onClick={suggest}>
+          {pitching ? "Sky is reading the news…" : "Suggest topics"}
         </button>
       </form>
     </>

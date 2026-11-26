@@ -9,6 +9,8 @@ export const EXPLAINED_SECTIONS = ["hook", "context", "idea", "example", "how", 
 // Shape only; hand edits are checked against this (the editor shows the length warning instead).
 export const ScriptShape = z.object({
   title: z.string().min(1).max(70),
+  // Long videos: two more titles for YouTube's Test & Compare, each drawn its own thumbnail (prompts/script-long.md).
+  alt_titles: z.array(z.string().min(1).max(70)).max(2).optional(),
   hook: z.string().min(1),
   analogy: z.string().min(1),
   analogy_breaks_down: z.string().min(1),
@@ -177,6 +179,26 @@ export const FactCheck = z.object({
   ),
 });
 export type FactCheck = z.infer<typeof FactCheck>;
+
+// Today's facts for a calm video, looked up before Sky writes (prompts/research.md): memory can't know this year's numbers.
+export const Research = z.object({
+  news: z.string(),
+  facts: z.array(z.object({ fact: z.string().min(1), date: z.string().min(1), source: z.string().min(1) })).min(1).max(15),
+});
+export type Research = z.infer<typeof Research>;
+
+// Topic ideas for the channel (prompts/pitch.md), each already packaged with its title and opening line.
+export const SERIES = ["How it makes money", "Why it costs more", "Money news"] as const;
+export const Pitch = z.object({
+  ideas: z.array(z.object({
+    title: z.string().min(1).max(70),
+    hook: z.string().min(1),
+    series: z.enum(SERIES),
+    why_now: z.string().min(1),
+    layout: z.enum(["explained", "long"]),
+  })).min(5).max(10),
+});
+export type Pitch = z.infer<typeof Pitch>;
 
 export const Review = z.object({
   ok: z.boolean(),

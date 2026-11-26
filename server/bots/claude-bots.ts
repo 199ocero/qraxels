@@ -1,8 +1,8 @@
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Job } from "../office.ts";
-import { ROOT, dir, list, load, readJson, writeJson, type State } from "../project.ts";
-import { EXPLAINED_SECTIONS, ExplainedScript, FactCheck, HISTORY, LABELED, LongScript, SECTIONS, Script, Scenes, chaptersOf, type Scene } from "../schemas.ts";
+import { ROOT, dir, list, listArchived, load, readJson, writeJson, type State } from "../project.ts";
+import { EXPLAINED_SECTIONS, ExplainedScript, FactCheck, HISTORY, Pitch, Research, LABELED, LongScript, SECTIONS, Script, Scenes, chaptersOf, type Scene } from "../schemas.ts";
 import { OPUS, SONNET, runClaude } from "../claude.ts";
 import { rand, seedOf } from "../../remotion/mono.ts";
 
@@ -66,10 +66,11 @@ export const script: Job = async ({ state, note, activity, signal }) => {
   const angle = state.layout === "built" ? BUILT_ANGLES[n % BUILT_ANGLES.length] : ANGLES[n % ANGLES.length];
   // Long videos are paced by their chapters instead of one section wave.
   const [schema, order] = state.layout === "mono" ? [Script, SECTIONS] : state.layout === "long" ? [LongScript, null] : [ExplainedScript, EXPLAINED_SECTIONS];
+  const research = state.layout === "explained" || state.layout === "long" ? await researched(state, activity, signal) : "";
   const write = (fix?: string) =>
     runClaude({
       model: OPUS,
-      prompt: fill("script", { topic: state.topic, avoid, angle }, [note, fix].filter(Boolean).join("\n\n") || undefined, ...variantsOf(state)),
+      prompt: fill("script", { topic: state.topic, avoid, angle, research }, [note, fix].filter(Boolean).join("\n\n") || undefined, ...variantsOf(state)),
       schema: schema.superRefine((x, ctx) => {
         const copied = [...runs(x.beats.map((b) => b.narration).join(" "))].filter((k) => used.has(k));
         if (copied.length) ctx.addIssue({ code: "custom", path: ["beats"], message: `these phrases repeat earlier videos; rewrite those lines with new words: ${copied.map((c) => `"${c}"`).join(", ")}` });
@@ -104,12 +105,39 @@ export const script: Job = async ({ state, note, activity, signal }) => {
   return `Script "${s.title}" is ready: ~${secs}s, ${s.beats.length} beats${parts}, ${s.flagged_claims.length} claims flagged.${checked}`;
 };
 
+export const today = () => new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+// Today's facts for the script, looked up once per project (research.json; a redo reuses it). Money news dates fast and
+// Sky writes from memory, so without this a "this year" video ships years-old numbers. Empty when it can't run.
+async function researched(state: State, activity: (l: string) => void, signal: AbortSignal): Promise<string> {
+  const f = dir(state.id, "research.json");
+  if (!existsSync(f)) {
+    activity("researching today's facts");
+    try {
+      writeJson(f, await runClaude({ model: SONNET, prompt: fill("research", { topic: state.topic, today: today() }), schema: Research, tools: ["WebSearch", "WebFetch"], onActivity: activity, signal }));
+    } catch (e) {
+      if (signal.aborted) throw e;
+      return "The research step failed, so write from what you already know and say a number roughly when you're unsure of it.\n";
+    }
+  }
+  return researchText(readJson<Research>(f));
+}
+
+export const researchText = (r: Research) =>
+  `Research done today (${today()}). Build the video on these facts: they are newer than your memory, so where they differ, they win. When the title or a line says "this year", "now" or "today", use the newest figure here. Anything else you state from memory still goes in flagged_claims.\nWhat's new: ${r.news}\n${r.facts.map((x) => `- ${x.fact} (${x.date})`).join("\n")}\n`;
+
+// Topic ideas for the channel, from this week's news and the season (prompts/pitch.md); never repeats a past topic.
+export async function pitch(signal?: AbortSignal): Promise<Pitch> {
+  const past = [...list(), ...listArchived()].map((p) => `- ${p.topic}`).join("\n") || "- none yet";
+  return runClaude({ model: SONNET, prompt: fill("pitch", { today: today(), past }), schema: Pitch, tools: ["WebSearch", "WebFetch"], timeoutMs: 4 * 60_000, signal });
+}
+
 // Checks each flagged claim with web search (Sonnet: it's lookup work, not writing).
 async function factCheck(topic: string, s: Script, activity: (l: string) => void, signal: AbortSignal): Promise<FactCheck> {
   activity(`checking ${s.flagged_claims.length} facts`);
   return runClaude({
     model: SONNET,
-    prompt: fill("factcheck", { topic, claims: s.flagged_claims.map((c, i) => `${i + 1}. ${c}`).join("\n"), script: s.beats.map((b) => b.narration).join(" ") }),
+    prompt: fill("factcheck", { topic, title: s.title, today: today(), claims: s.flagged_claims.map((c, i) => `${i + 1}. ${c}`).join("\n"), script: s.beats.map((b) => b.narration).join(" ") }),
     schema: FactCheck,
     tools: ["WebSearch", "WebFetch"],
     onActivity: activity,
@@ -140,6 +168,7 @@ export function writeScript(id: string, s: Script): number {
       "",
       `~${secs}s spoken (${words} words) · analogy: ${s.analogy}`,
       "",
+      ...(s.alt_titles?.length ? ["Also tested: " + s.alt_titles.map((t) => `"${t}"`).join(", "), ""] : []),
       ...s.beats.flatMap((b, i) => [
         ...(b.chapter && b.chapter !== s.beats[i - 1]?.chapter ? [`## ${chaptersOf(s).indexOf(b.chapter) + 1}. ${b.chapter}`, ""] : []),
         `${i + 1}. ${b.section ? `[${b.section}] ` : ""}${b.narration}`,

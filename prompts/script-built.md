@@ -14,6 +14,7 @@ No research: write from what you already know. Before writing, work out (don't o
 - THE PIECE: one concrete unit followed through (one block, one day on site, one arch, one gear turning).
 - THE STEPS: the build or the working in 3–4 ordered steps.
 - THE EVIDENCE AND THE LIMIT: how we know (a surviving tool, a papyrus, marks on the stone, an experiment), and what historians still debate or a popular myth that isn't true.
+- THE TAKE: what this channel actually thinks, in one beat wherever it fits the structure: which explanation is most convincing and why, what the builders were really clever about, or what it says about the people who built it. An argument, not another fact. YouTube cuts channels whose videos look template-made without the creator's own insight, so every video needs one.
 
 {{avoid}}
 Tag every beat with its section, in this order:

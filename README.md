@@ -2,15 +2,15 @@
 
 A small 3D office of bots that turns a topic into a vertical (1080x1920, 90–120 s) video, drawn in black-and-white with a hooded box-head character with glowing eyes and bendy limbs.
 
-You hand a topic to the team in the chat. Each bot does its part at its own cubicle, then walks the folder over to the next bot. The script and the finished video both land on **your desk** for approval. Nothing is ever posted automatically.
+You hand a topic to the team in the chat. Or press **Suggest topics**: Sky reads this week's money news and the season and proposes 8 ideas, each with its title, first line and series (`prompts/pitch.md`); click one to fill the topic box. Each bot does its part at its own cubicle, then walks the folder over to the next bot. The script and the finished video both land on **your desk** for approval. Nothing is ever posted automatically.
 
 | Bot | Job | Writes to `projects/{id}/` |
 |---|---|---|
-| Sky · Scriptwriter | Writes the speech from its own knowledge: hook, beats, a real closing. In the calm styles, every flagged fact is then checked with web search (`prompts/factcheck.md`, Sonnet); a wrong one goes back to Sky once, and each claim's verdict and source show in `script.md` | `script.md`, `factcheck.json` → **your desk** |
+| Sky · Scriptwriter | Writes the speech: hook, beats, a real closing. For Explained videos (short and long), a web-search step first gathers today's dated facts (`prompts/research.md`, Sonnet, saved as `research.json`) so money news uses this year's numbers, not memory's. In the calm styles, every flagged fact is then checked with web search (`prompts/factcheck.md`, Sonnet); a wrong one goes back to Sky once, and each claim's verdict and source show in `script.md` | `research.json`, `script.md`, `factcheck.json` → **your desk** |
 | Dot · Director | Splits the script into scenes. Uses a library picture for most scenes (each at most once per video, avoiding the ones the last video showed when another fits); writes a shot for Bolt to draw for at most a third of them (`DRAWN_SHARE`), the moments no library picture can show | `scenes.json` |
 | Nova · Narrator | Kokoro voice (local, free) plus per-word timestamps | `audio/` |
 | Bolt · Builder | Draws each scene with a shot as its own small component (`prompts/draw.md`, the library's drawing kit), renders a still per scene, then Claude reviews them and redraws or fixes what's off | `draw/`, `stills/` |
-| Ray · Renderer | Renders the final video; once you approve it, makes 3 cover thumbnails (1080x1920, for YouTube Shorts and Meta Reels) | `out.mp4` → **your desk**, then `thumbs/` |
+| Ray · Renderer | Renders the final video and, for the calm styles, its YouTube description (`description.txt`: the fact check's sources, credits, the not-financial-advice line); once you approve it, makes 3 cover thumbnails (1080x1920, for YouTube Shorts and Meta Reels) | `out.mp4` → **your desk**, then `thumbs/` |
 
 ## The video
 

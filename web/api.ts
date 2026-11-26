@@ -1,6 +1,6 @@
 import { demoApi, isDemo } from "./demo.ts";
 
-export type Action = "topic" | "approve" | "reject" | "retry" | "redo" | "archive" | "restore" | "script" | "cancel" | "delete" | "music";
+export type Action = "topic" | "approve" | "reject" | "retry" | "redo" | "archive" | "restore" | "script" | "cancel" | "delete" | "music" | "pitch";
 
 export async function api(action: Action, body: Record<string, unknown>): Promise<unknown> {
   if (isDemo) return demoApi(action, body);
