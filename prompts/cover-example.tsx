@@ -1,7 +1,9 @@
 import { Figure, STAND, Backdrop, font } from "kit";
 
-// Title: "How Costco Makes Money (It's Not the Groceries)". The title asks; the cover answers with one object:
-// the $65 membership card, huge and lit like a relic, with the mascot pointing at it and 3 words that add to the title.
+// Title: "How Costco Makes Money (It's Not the Groceries)". Copy the TECHNIQUE (one huge glowing hero, the mascot
+// pointing, 3 big words, the coins). One lesson from it: the video opened on a grocery
+// receipt and said "$65" only at 1:08, so viewers who clicked for the card left in 8 seconds. Draw a hero from the
+// video's opening lines.
 export default function Cover({ w, h }) {
   const cx = 700, cy = 590;
   const coin = (x, y, r, s) => (

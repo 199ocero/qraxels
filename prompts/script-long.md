@@ -14,18 +14,19 @@ No research: write from what you already know. Before writing, work out (don't o
 
 {{avoid}}
 Chapters (5–7 of them, each 150–280 words, so 60–120 seconds):
-- Every beat has `chapter`: the chapter's title, 2–6 words, the same on every beat of that chapter (e.g. "The $65 ticket", "The hot dog that loses money"). Titles are specific and curious, never "Introduction" or "Conclusion".
+- Every beat has `chapter`: the chapter's title, 2–6 words, the same on every beat of that chapter (e.g. "The $65 ticket", "The hot dog that loses money"). Each chapter title is also its Short's title, seen by strangers with no context, so make it a specific, curious claim or object they would tap ("Costco caps its own prices", "The $65 ticket"), key words first, never a cryptic label ("The 14 percent ceiling") and never "Introduction" or "Conclusion".
 - Chapter 1 opens the video: a question or a situation the viewer recognizes, in the first three seconds, then why it's worth ten minutes. Never "In this video", "Have you ever wondered" or "Welcome back".
 - The middle chapters each answer one part of the question: name it, explain the mechanism step by step, play out the picture and an example.
 - The last chapter: what to do (number the steps out loud: "One: ... Two: ..."), the honest limit in one or two sentences, and a close that returns to the opening question, now understood. The last line is the one they'll remember, and it ends with a full stop.
 - EVERY CHAPTER MUST STAND ON ITS OWN. Each one is also cut into its own Short, watched by people who never saw the rest. So:
-  - Its first line is a hook that works cold: a surprising fact, a question, a situation. Never open a chapter with "Second", "Next", "Now", "So", "As we saw" or anything that points back.
+  - Its first line is a hook that works cold, with a number or a concrete object in it: "A basic Costco card costs $65 a year." held 62% of Short viewers; the abstract "Most stores try to charge as much as you'll accept." held 29%. Never open a chapter with "Second", "Next", "Now", "So", "As we saw" or anything that points back.
   - Never rely on something only another chapter explained. If you need it, re-say it in one short clause.
   - Its last line lands: a payoff, a turn or a question that makes them want the next part. Never "but more on that later".
 - In the full video the chapters still flow in order: each builds on the last, and the move from one to the next feels natural.
 
 Keeping people watching (YouTube recommends videos people keep watching; most viewers who leave, leave in the first 30 seconds):
-- THE FIRST 15 SECONDS deliver what the title promises: the first two lines state the title's question and a specific, surprising fact about it. Nothing comes before the hook: no setup, no "let's talk about", no summary of what's coming.
+- THE FIRST 15 SECONDS deliver what the title and thumbnail promise (YouTube's own advice: viewers decide in these seconds, so get straight to the value). Line 1 names the title's subject and the most surprising specific fact or number about it; line 2 states the question. Nothing comes before the hook: no setup, no "let's talk about", no summary of what's coming.
+- LINE 1 IS THE THUMBNAIL: its fact is concrete enough to draw (a $65 card, a $4.99 chicken, a tiny coin beside a giant warehouse). The thumbnail is drawn from the opening lines, so the viewer who clicked sees what they clicked for within seconds (YouTube: move your strongest moments earlier).
 - ONE OPEN LOOP: in chapter 1 (in its middle, never its last line), tease the most surprising thing in the video without explaining it ("And the strangest part is a hot dog that has cost $1.50 since 1985."). A later chapter pays it off, re-stating the tease in one clause so that chapter still works alone.
 - THE MIDPOINT: the chapter that starts nearest the middle of the video opens on the video's most surprising fact or turn. That's where viewers usually drift.
 - NO FILLER: every beat adds a new fact, step, example or picture. Never re-explain something already explained, recap a chapter, or pad a line to reach the word count; if the topic runs short, go deeper on the mechanism or add an example.
@@ -48,7 +49,7 @@ Content rules:
 - HARD LIMIT: 1100–1400 words of narration in total. Count them. It's read calmly, about 2.25 words a second with the pauses, so this fills 8–10 minutes. Under 1100 is too short for mid-roll ads; over 1400 runs past ten minutes.
 
 Field meanings for this style:
-- title: the question or the answer, clear and specific, under 70 characters (e.g. "How Costco makes money (it's not the groceries)").
+- title: the question or the answer, clear and specific, under 70 characters, with the key words first (viewers often see only the start) and nothing the video doesn't deliver (e.g. "How Costco makes money (it's not the groceries)").
 - analogy: the video's main picture, in a few words.
 - analogy_breaks_down: where the explanation stops being true; it's what the limit says.
 - flagged_claims: every fact, number or named source you used, so the user can double-check it.

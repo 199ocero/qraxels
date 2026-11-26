@@ -41,7 +41,7 @@ Rules:
 - Show the MEANING literally: a curve → Chart, steps → Plan with the steps as items, time → Calendar/Clock/Hourglass, slow growth → Tree/Bricks/Jar, a choice → Fork. Use a stat counter when the script says a real number (from and to, e.g. a temperature climbing 25 → 32).
 - Gym and workout scenes (PullUp, Lift, Boxing, Run, Pushup, JumpRope) only if the script is literally about exercise.
 - purpose: setup or explain. The hook, the payoff (first scene of chapter 2) and the outro are set automatically.
-- Delivery: energy "calm" on EVERY scene. speed 0.95–1.0. pause_after 0.3–0.45 between sentences, 1.0–1.2 on the last scene of each chapter (a breath before the next part), 1.2–1.5 on the final scene of the video.
+- Delivery: energy "calm" on EVERY scene. speed 0.95–1.0, except the video's first two scenes (chapter 1 only): speed 1.05 and pause_after 0.2, so the hook grabs instead of drifting. pause_after 0.3–0.45 between sentences, 1.0–1.2 on the last scene of each chapter (a breath before the next part), 1.2–1.5 on the final scene of the video.
 - If your chapter is the last one, the ending is a real ending: the final scene is purpose "outro", no hit, camera "pull", and it holds for 3 more seconds while the music rings out, so pick props that read as a resolution (a grown tree, an open door, a finished puzzle, a chart at its peak).
 - Labels are UPPERCASE-friendly, no emoji, and say something the viewer needs (a step, a number, a name), not a slogan.
 {{note}}
