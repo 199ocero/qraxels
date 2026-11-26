@@ -26,6 +26,8 @@ export type State = {
   steps: Record<Step, StepStatus>;
   gate: Gate | null;
   approved: boolean;
+  // Set on approval until its thumbnails (and a long video's Shorts) are made, so a restart picks them back up.
+  afterPending?: boolean;
   notes: Partial<Record<Step, string>>;
   // A track picked for this video (a file in its music folder, or "off"); unset = MONO_MUSIC / EXPLAINED_MUSIC.
   music?: string;

@@ -166,20 +166,24 @@ export class Office extends EventEmitter {
       this.update(id, (x) => {
         x.gate = null;
         x.approved = true;
+        x.afterPending = !!this.afterApprove;
       });
       this.say("You", "Video approved.", id);
       this.say(role("render").name, `Final video saved at projects/${id}/out.mp4 — ready to post.`, id);
-      if (this.afterApprove) {
-        const ray = role("render").name;
-        this.say(ray, s.layout === "long" ? "Making 3 thumbnails, then cutting each chapter into a Short…" : "Making 3 thumbnails for YouTube Shorts and Reels…", id);
-        this.afterApprove({ state: P.load(id), activity: () => {}, signal: new AbortController().signal })
-          .then((summary) => {
-            this.update(id, () => {}); // bumps updated_at so the files list picks the thumbnails up
-            this.say(ray, summary, id);
-          })
-          .catch((e) => this.say(ray, `I couldn't finish the thumbnails${s.layout === "long" ? " and Shorts" : ""}: ${(e as Error).message}`, id));
-      }
+      this.runAfterApprove(id);
     }
+  }
+
+  private runAfterApprove(id: string) {
+    if (!this.afterApprove) return;
+    const s = P.load(id);
+    const ray = role("render").name;
+    const done = () => this.update(id, (x) => delete x.afterPending); // also bumps updated_at so the files list picks them up
+    this.say(ray, s.layout === "long" ? "Making 3 thumbnails, then cutting each chapter into a Short…" : "Making 3 thumbnails for YouTube Shorts and Reels…", id);
+    this.afterApprove({ state: s, activity: () => {}, signal: new AbortController().signal })
+      .then((summary) => (done(), this.say(ray, summary, id)))
+      // A thrown error clears the flag too, so a broken job doesn't rerun on every restart; only a killed server resumes.
+      .catch((e) => (done(), this.say(ray, `I couldn't finish the thumbnails${s.layout === "long" ? " and Shorts" : ""}: ${(e as Error).message}`, id)));
   }
 
   // Sends the work back to `to` with a note; that step and everything after it is redone.
@@ -310,6 +314,7 @@ export class Office extends EventEmitter {
   }
 
   private resumeOne(s: State) {
+    if (s.approved && s.afterPending) return this.runAfterApprove(s.id);
     if (s.gate || s.approved) return;
     const step = P.STEPS.find((st) => s.steps[st] === "pending" || s.steps[st] === "working");
     if (!step || !P.STEPS.slice(0, P.STEPS.indexOf(step)).every((st) => s.steps[st] === "done")) return;

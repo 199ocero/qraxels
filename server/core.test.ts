@@ -191,6 +191,20 @@ test("office hands work along the pipeline and stops at both gates", async () =>
   assert.ok(P.chatHistory().some((m) => m.text.includes("out.mp4")));
 });
 
+test("thumbnails and Shorts killed by a restart run again on resume, then the flag clears", async () => {
+  const jobs = Object.fromEntries(P.STEPS.map((s) => [s, async () => "ok."])) as any;
+  const s = P.save({ ...P.create("Restart mid-Shorts"), gate: "video", steps: Object.fromEntries(P.STEPS.map((st) => [st, "done"])) as any });
+  new Office(jobs, 0, () => new Promise(() => {})).approve(s.id); // the server dies before it finishes
+  assert.equal(P.load(s.id).afterPending, true);
+  let ran = 0;
+  const office = new Office(jobs, 0, async () => (ran++, "Shorts done."));
+  const said = new Promise<void>((r) => office.on("event", (e: any) => e.type === "chat" && e.msg.text === "Shorts done." && r()));
+  office.resume();
+  await said;
+  assert.equal(ran, 1);
+  assert.equal(P.load(s.id).afterPending, undefined);
+});
+
 test("a failed job marks the step failed and retry re-runs it", async () => {
   let fail = true;
   const jobs = Object.fromEntries(P.STEPS.map((s) => [s, async () => "ok."])) as any;
@@ -713,4 +727,11 @@ test("the cover prompt's example is a valid drawing, and the prompt fills it in"
   assert.deepEqual(checkDrawing(example), []);
   const prompt = fill("cover", { title: "T", example });
   assert.ok(prompt.includes("export default function Cover") && !/\{\{\w+\}\}/.test(prompt));
+});
+
+test("a facing figure's elbow bends outward: mirrored across shoulder–hand when IK put it inside", async () => {
+  const { elbowOut } = await import("../remotion/components/Figure3D.tsx");
+  assert.deepEqual(elbowOut([74, -140], [60, -90], [100, -40], 1).map(Math.round), [111, -103]); // was inside → mirrored out, same lengths
+  assert.deepEqual(elbowOut([74, -140], [111, -102], [100, -40], 1), [111, -102]); // already outside: unchanged
+  assert.deepEqual(elbowOut([-74, -140], [-60, -90], [-100, -40], -1).map(Math.round), [-111, -103]); // the left arm too
 });

@@ -12,6 +12,7 @@ export type View = "side" | "front" | "back";
 export type Img = { href: string; x: number; y: number; w: number; h: number };
 
 const R = 12; // half the SVG limb stroke
+const EDGE = 72; // facing views: the hoodie's half-width on screen (59 with the yaw) plus the arm's R
 const YAW: Record<View, number> = { side: -0.38, front: 0.28, back: -0.28 }; // turned a little so the depth shows
 const FACE: Record<View, number> = { side: 0, front: -Math.PI / 2, back: Math.PI / 2 }; // rig is built facing +x
 
@@ -55,6 +56,15 @@ function glowSprite(size: number, opacity: number) {
   return s;
 }
 
+// The elbow k of shoulder a → hand e, on the `dir` side (+1 right, -1 left): mirrored across a–e if it's on the other
+// side, which is IK's other solution (same bone lengths).
+export function elbowOut(a: Pt, k: Pt, e: Pt, dir: number): Pt {
+  const d: Pt = [e[0] - a[0], e[1] - a[1]];
+  const t = ((k[0] - a[0]) * d[0] + (k[1] - a[1]) * d[1]) / (d[0] ** 2 + d[1] ** 2 || 1);
+  const foot: Pt = [a[0] + t * d[0], a[1] + t * d[1]];
+  return dir * (k[0] - foot[0]) < 0 ? [2 * foot[0] - k[0], 2 * foot[1] - k[1]] : k;
+}
+
 // Rubber-hose limb: the SVG's quadratic curve (passing through the joint) as a tube, plus the foot, with round caps.
 function limb(g: THREE.Group, [a, k, e, toe]: Pt[], z: number, mat: THREE.Material) {
   const ctl: Pt = [2 * k[0] - (a[0] + e[0]) / 2, 2 * k[1] - (a[1] + e[1]) / 2];
@@ -75,13 +85,22 @@ export function rig(j: Joints, view: View, color: string, back: string, opacity 
   const trim = toon(new THREE.Color(color).multiplyScalar(0.62), opacity);
   const side = view === "side";
   // Arms hang from the hoodie's sides. Side view: just outside its 100-deep sides, the near one toward the camera.
-  // Facing views: the skeleton's shoulders (26 from the centre) are inside the 100-wide body, so the arm moves out 32
-  // to the body's edge; a pinned hand (IK grip on a bar or rope) stays put and only the shoulder and elbow move.
-  const out = (pts: Pt[], dx: number): Pt[] => (side ? pts : pts.map((p, i) => (pinned && i === 2 ? p : [p[0] + dx, p[1]])));
-  limb(root, out(j.armL, -32), side ? -56 : 0, far);
+  // Facing views: the skeleton's shoulders (26 from the centre) are inside the body, so the arm moves out 48: the body, turned
+  // by the yaw, spans ±59 on screen and the arm is 12 thick, so less leaves the upper arm hidden behind it. A pinned hand
+  // (IK grip on a bar or rope) stays put and only the shoulder and elbow move.
+  // A pinned hand inside the body (|x| < EDGE) would be hidden by it, so that arm moves out whole, and its elbow bends
+  // outward: IK may have bent it inward, behind the body, which shows as a zigzag.
+  const out = (pts: Pt[], dx: number): Pt[] => {
+    if (side) return pts;
+    const hidden = pinned && Math.abs(pts[2][0]) < EDGE;
+    if (pinned && !hidden) return pts.map((p, i) => (i === 2 ? p : [p[0] + dx, p[1]]));
+    const [a, k, e] = pts.map((p): Pt => [p[0] + dx, p[1]]);
+    return hidden ? [a, elbowOut(a, k, e, Math.sign(dx)), e] : [a, k, e];
+  };
+  limb(root, out(j.armL, -48), side ? -56 : 0, far);
   limb(root, j.legL, side ? -22 : 0, far);
   limb(root, j.legR, side ? 22 : 0, near);
-  limb(root, out(j.armR, 32), side ? 56 : 0, near);
+  limb(root, out(j.armR, 48), side ? 56 : 0, near);
   if (limbsOnly) return root;
 
   // Hoodie, in the torso's frame (hip at the origin, up along the torso), with its front pocket and drawstrings.
