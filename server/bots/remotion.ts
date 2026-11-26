@@ -4,14 +4,14 @@ import { bundle } from "@remotion/bundler";
 import { makeCancelSignal, openBrowser, renderMedia, renderStill, selectComposition, type RenderMediaOptions } from "@remotion/renderer";
 import type { Job } from "../office.ts";
 import { ROOT, dir, readJson, writeJson, type Layout, type State } from "../project.ts";
-import { Review, chaptersOf, type FactCheck, type Scene, type Script } from "../schemas.ts";
-import { OPUS, runClaude } from "../claude.ts";
+import { CoverCheck, Review, chaptersOf, type FactCheck, type Scene, type Script } from "../schemas.ts";
+import { OPUS, SONNET, runClaude } from "../claude.ts";
 import { fill } from "./claude-bots.ts";
 import { readVoiced, run, type VoicedScenes } from "./voice.ts";
 import { drawCover, drawPath, drawScenes, drawnOf, markWideOnly, tallAsOf } from "./draw.ts";
 import { musicDirFor, musicLibrary } from "../music.ts";
 import type { ExplainerProps } from "../../remotion/Explainer.tsx";
-import { musicFor, seedOf, type Track } from "../../remotion/mono.ts";
+import { END_SCREEN, musicFor, seedOf, type Track } from "../../remotion/mono.ts";
 
 const FPS = 30;
 // The effects layer (remotion/MonoFx.tsx) is WebGL, which headless Chrome only runs with the ANGLE backend.
@@ -262,11 +262,15 @@ export const render: Job = async ({ state, activity, signal }) => {
     if (described) {
       const fc = existsSync(dir(state.id, "factcheck.json")) ? readJson<FactCheck>(dir(state.id, "factcheck.json")) : { claims: [] };
       const chapters = props.wide && props.chapters?.length ? chapterTimestamps(props.scenes, props.chapters) : [];
-      writeFileSync(dir(state.id, "description.txt"), videoDescription(readJson<Script>(dir(state.id, "script.json")).title, chapters, fc, credit, state.layout !== "built"));
+      const script = readJson<Script>(dir(state.id, "script.json"));
+      writeFileSync(dir(state.id, "description.txt"), videoDescription(script.title, chapters, fc, credit, state.layout !== "built"));
+      if (script.pinned_comment) writeFileSync(dir(state.id, "comment.txt"), pinnedComment(script.pinned_comment, !!props.wide));
     }
     const songs = props.chapterMusic?.length ? props.chapterMusic : props.music ? [props.music] : [];
     const song = songs.length ? ` Music: ${[...new Set(songs.map((t) => t.src.split("/").pop()))].join(", ")}.` : " No music (add a sound in TikTok).";
-    const desc = described ? " The YouTube description (sources, credits and chapters for a long video) is in description.txt." : credit ? ` Put this in the description: ${credit}` : "";
+    const desc = described
+      ? ` The YouTube description (sources, credits and chapters for a long video) is in description.txt${existsSync(dir(state.id, "comment.txt")) ? ", the comment to pin in comment.txt" : ""}.${props.wide ? ` It ends on ${END_SCREEN} s for an end screen: add one in Studio (a video to watch next and subscribe) over the last ${END_SCREEN} s.` : ""}`
+      : credit ? ` Put this in the description: ${credit}` : "";
     return `Video rendered: ${(composition.durationInFrames / FPS).toFixed(1)}s, ${composition.width}x${composition.height}.${song}${desc}`;
   } finally {
     dropBundle(serveUrl);
@@ -319,6 +323,10 @@ export function videoDescription(title: string, chapters: string[], fc: FactChec
     ...(disclaimer ? ["", "For educational purposes only. Not financial advice."] : []),
   ].join("\n") + "\n";
 }
+
+// The comment to pin under a video: Sky's question, plus the Hype ask on long videos (Hype is for channels under 500K).
+export const pinnedComment = (question: string, long: boolean) =>
+  `${question}${long ? "\n\nIf this one was worth your time, tap Hype under the video: it's how a small channel like this gets seen." : ""}\n`;
 
 const quoted = (ts: string[]) => ts.map((t) => `"${t}"`).join(", ");
 
@@ -408,10 +416,27 @@ export const thumbs: Job = async ({ state, activity, signal }) => {
     mkdirSync(out, { recursive: true });
     const lines = video.scenes.map((s) => s.narration ?? "");
     activity("drawing the thumbnail");
-    const cover = (await drawCover(state, "video", title, lines, !!video.wide, signal)) ?? undefined;
+    const drawn = (await drawCover(state, "video", title, lines, !!video.wide, signal)) ?? undefined;
+    const composition = await selectComposition({ serveUrl, id: "Thumbnail", inputProps: { video, title, cover: drawn }, chromiumOptions });
+    // A cover at the size a phone shows it (360 px wide): Sonnet looks at it there, and it's redrawn once with what
+    // didn't read. Only this video's covers; the chapter Shorts' covers aren't checked.
+    const atPhoneSize = async (name: string, t: string, c: string, others = ""): Promise<string> => {
+      const small = `covers/${name}-phone.jpeg`;
+      try {
+        await renderStill({ serveUrl, composition, inputProps: { video, title: t, cover: c }, chromiumOptions, envVariables, frame: 0, output: dir(state.id, small), imageFormat: "jpeg", jpegQuality: 90, scale: 360 / composition.width });
+        activity(`checking ${name === "video" ? "the thumbnail" : name} at phone size`);
+        const check = await runClaude({ model: SONNET, prompt: fill("cover-check", { file: small, title: t, px: "360" }), schema: CoverCheck, tools: ["Read"], cwd: dir(state.id), signal });
+        if (check.ok) return c;
+        activity(`redrawing: ${check.note.slice(0, 60)}`);
+        return (await drawCover(state, name, t, lines, !!video.wide, signal, others, `At phone size (360 px wide) your last cover didn't read: ${check.note}`)) ?? c;
+      } catch (e) {
+        if (signal.aborted) throw e;
+        return c; // the check is a bonus: if it can't run, the cover ships as drawn
+      }
+    };
+    const cover = drawn && (await atPhoneSize("video", title, drawn));
     const frames = cover ? [0] : thumbFrames(video.scenes);
     const inputProps = { video, title, cover };
-    const composition = await selectComposition({ serveUrl, id: "Thumbnail", inputProps, chromiumOptions });
     for (const [i, frame] of frames.entries()) {
       activity(`thumbnail ${i + 1}/${frames.length}`);
       await renderStill({ serveUrl, composition, inputProps, chromiumOptions, envVariables, frame, output: join(out, `thumb-${i + 1}.jpeg`), imageFormat: "jpeg", jpegQuality: 90 });
@@ -424,8 +449,9 @@ export const thumbs: Job = async ({ state, activity, signal }) => {
     for (const [i, alt] of alts.entries()) {
       activity(`drawing test thumbnail ${i + 2}`);
       const others = `This is one of ${alts.length + 1} title + thumbnail pairs YouTube tests against each other for the same video; the other titles are ${quoted([title, ...alts].filter((t) => t !== alt))}. Build yours on a different hero or contrast from the opening lines than theirs would, so the test compares real alternatives.`;
-      const c = await drawCover(state, `video-${i + 2}`, alt, lines, true, signal, others);
-      if (!c) continue;
+      const first = await drawCover(state, `video-${i + 2}`, alt, lines, true, signal, others);
+      if (!first) continue;
+      const c = await atPhoneSize(`video-${i + 2}`, alt, first, others);
       await renderStill({ serveUrl, composition, inputProps: { video, title: alt, cover: c }, chromiumOptions, envVariables, frame: 0, output: join(out, `thumb-${pairs.length + 1}.jpeg`), imageFormat: "jpeg", jpegQuality: 90 });
       pairs.push(`thumb-${pairs.length + 1}.jpeg  ${alt}`);
     }

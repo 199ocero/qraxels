@@ -2,6 +2,8 @@
 
 usage: uv run --project voice python voice/kokoro_tts.py <scenes.json> <out_dir> [voice] [punch]
        uv run --project voice python voice/kokoro_tts.py --warmup
+       uv run --project voice python voice/kokoro_tts.py --selftest
+       uv run --project voice python voice/kokoro_tts.py --level <voice.wav>   (level another engine's voice in place)
 """
 
 import json
@@ -25,25 +27,46 @@ def pipeline():
     return KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M")
 
 
+# Symbols that open a word ("$65", "(about"): in captions they stick to the NEXT word. Other punctuation sticks to the
+# previous one. Kokoro gives "$" as its own token, which used to caption "costs $65" as "costs$ 65".
+OPENERS = set("$£€¥([“‘")
+
+
+def add_token(words, text, start, end, scene, held):
+    """Adds one Kokoro token to the caption words; returns the opening symbols still waiting for their word."""
+    if not WORDY.search(text):
+        if all(c in OPENERS for c in text):
+            return held + text
+        if words and words[-1]["scene"] == scene:
+            words[-1]["word"] += text
+        return held
+    if start is None or end is None:
+        return held
+    words.append({"word": held + text, "start": start, "end": end, "scene": scene})
+    return ""
+
+
+def selftest():
+    words, held = [], ""
+    for text in ["costs", "$", "65", "a", "year", ".", "(", "about", ")"]:
+        held = add_token(words, text, 0.0, 0.1, 0, held)
+    assert [w["word"] for w in words] == ["costs", "$65", "a", "year.", "(about)"], words
+    print("kokoro_tts selftest ok")
+
+
 def narrate(scenes, voice, pipe):
     chunks, words, timings = [], [], []
     t = 0.0  # running time in seconds
     for i, scene in enumerate(scenes):
         start = t
+        held = ""
         for result in pipe(scene["narration"], voice=voice, speed=float(scene.get("speed", 1.0))):
             audio = result.audio.numpy() if hasattr(result.audio, "numpy") else np.asarray(result.audio)
             for tok in result.tokens or []:
                 text = tok.text.strip()
-                if not text:
-                    continue
-                if not WORDY.search(text):
-                    # Punctuation sticks to the previous word for captions.
-                    if words and words[-1]["scene"] == i:
-                        words[-1]["word"] += text
-                    continue
-                if tok.start_ts is None or tok.end_ts is None:
-                    continue
-                words.append({"word": text, "start": round(t + tok.start_ts, 3), "end": round(t + tok.end_ts, 3), "scene": i})
+                if text:
+                    timed = tok.start_ts is not None and tok.end_ts is not None
+                    held = add_token(words, text, round(t + tok.start_ts, 3) if timed else None, round(t + tok.end_ts, 3) if timed else None, i, held)
             chunks.append(audio)
             t += len(audio) / RATE
         pause = float(scene.get("pause_after", 0.3))
@@ -122,6 +145,14 @@ def rage(audio, words, timings, faster=1.06):
 
 
 def main():
+    if sys.argv[1:] == ["--selftest"]:
+        return selftest()
+    if sys.argv[1:2] == ["--level"]:
+        # Another engine's voice.wav (server/bots/voice.ts, Inworld), levelled in place like Kokoro's.
+        y, sr = sf.read(sys.argv[2], dtype="float32")
+        assert sr == RATE, f"expected {RATE} Hz audio, got {sr}"
+        sf.write(sys.argv[2], level(y), RATE)
+        return
     if sys.argv[1:] == ["--warmup"]:
         pipe = pipeline()
         audio, words, timings = narrate([{"narration": "Hello from the office."}], "af_heart", pipe)

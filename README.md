@@ -10,7 +10,7 @@ You hand a topic to the team in the chat. Or press **Suggest topics**: Sky reads
 | Dot · Director | Splits the script into scenes. Uses a library picture for most scenes (each at most once per video, avoiding the ones the last video showed when another fits); writes a shot for Bolt to draw for at most a third of them (`DRAWN_SHARE`), the moments no library picture can show | `scenes.json` |
 | Nova · Narrator | Kokoro voice (local, free) plus per-word timestamps | `audio/` |
 | Bolt · Builder | Draws each scene with a shot as its own small component (`prompts/draw.md`, the library's drawing kit), renders a still per scene, then Claude reviews them and redraws or fixes what's off | `draw/`, `stills/` |
-| Ray · Renderer | Renders the final video and, for the calm styles, its YouTube description (`description.txt`: the fact check's sources, credits, the not-financial-advice line); once you approve it, makes 3 cover thumbnails (1080x1920, for YouTube Shorts and Meta Reels) | `out.mp4` → **your desk**, then `thumbs/` |
+| Ray · Renderer | Renders the final video and, for the calm styles, its YouTube description (`description.txt`: the fact check's sources, credits, the not-financial-advice line) and the comment to pin (`comment.txt`: Sky's question, plus the Hype ask on long videos). Long videos end on 15 s of the mascot pointing at empty space for YouTube's end screen. Each drawn thumbnail is checked at phone size (360 px wide, `prompts/cover-check.md`) and redrawn once if it doesn't read; once you approve it, makes 3 cover thumbnails (1080x1920, for YouTube Shorts and Meta Reels) | `out.mp4` → **your desk**, then `thumbs/` |
 
 ## The video
 
@@ -55,10 +55,10 @@ The server listens on `127.0.0.1` only. If you ever turn this into a hosted serv
 |---|---|---|
 | `PORT` | `4321` | |
 | `VID_MODEL` | Opus 5.5 for script, scenes and frame review | Overrides the Claude model for every bot (use a full id like `claude-sonnet-5-5`) |
-| `VID_VOICE` | `kokoro` | or `elevenlabs` (needs `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`) |
+| `VID_VOICE` | `kokoro` | or `elevenlabs` (needs `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`), or `inworld` (Inworld TTS-2, paid per character: needs `INWORLD_API_KEY`, the Base64 credential from the Inworld Portal; `INWORLD_VOICE_ID` picks the voice, default `Dennis`, and `INWORLD_VOICE_ID_MONO` the motivation one). Inworld's delivery is steered by a short bracketed instruction per scene (`STEER` in `server/bots/voice.ts`); its audio is levelled like Kokoro's |
 | `KOKORO_VOICE` | `af_heart` | any [Kokoro voice](https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md) |
 | `KOKORO_VOICE_MONO` | `af_heart` | voice for motivation videos (`ELEVENLABS_VOICE_ID_MONO` for ElevenLabs) |
-| `VID_VOICE_MONO` | | voice engine for the videos (falls back to `VID_VOICE`): `kokoro` or `elevenlabs`. Kokoro reads every line at one level; under calm and quiet lines (each scene's `energy`, set by Dot from the script's section) the music and effects dip a little so they feel softer. Motivation videos also get `rage()` (see below); Explained videos are only levelled. |
+| `VID_VOICE_MONO` | | voice engine for the videos (falls back to `VID_VOICE`): `kokoro`, `elevenlabs` or `inworld`. Kokoro reads every line at one level; under calm and quiet lines (each scene's `energy`, set by Dot from the script's section) the music and effects dip a little so they feel softer. Motivation videos also get `rage()` (see below); Explained videos are only levelled. |
 
 ## Layout
 

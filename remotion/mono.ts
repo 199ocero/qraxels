@@ -73,6 +73,8 @@ export const TRACKS: Track[] = [
 // instead of stopping. Everything that needs the video's length uses videoEnd.
 export const OUTRO = 3;
 export const videoEnd = (scenes: { end?: number }[]) => (scenes.at(-1)?.end ?? 5) + OUTRO;
+// Long videos end on this many seconds for YouTube's end-screen elements (Studio allows the last 5–20 s).
+export const END_SCREEN = 15;
 
 // Scene sounds the Director may pick.
 export const SCENE_SFX = ["punch", "braam", "glitch", "crowd", "clock", "cash", "heartbeat"] as const;

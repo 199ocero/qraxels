@@ -169,6 +169,7 @@ export function writeScript(id: string, s: Script): number {
       `~${secs}s spoken (${words} words) · analogy: ${s.analogy}`,
       "",
       ...(s.alt_titles?.length ? ["Also tested: " + s.alt_titles.map((t) => `"${t}"`).join(", "), ""] : []),
+      ...(s.pinned_comment ? [`Pinned comment: ${s.pinned_comment}`, ""] : []),
       ...s.beats.flatMap((b, i) => [
         ...(b.chapter && b.chapter !== s.beats[i - 1]?.chapter ? [`## ${chaptersOf(s).indexOf(b.chapter) + 1}. ${b.chapter}`, ""] : []),
         `${i + 1}. ${b.section ? `[${b.section}] ` : ""}${b.narration}`,

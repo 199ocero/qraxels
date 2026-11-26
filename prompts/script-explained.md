@@ -49,4 +49,5 @@ Field meanings for this style:
 - analogy: the picture, in a few words.
 - analogy_breaks_down: where the picture or the idea stops being true; it's what the caveat says.
 - flagged_claims: every fact, number or named source you used, so the user can double-check it.
+- pinned_comment: one question for the comment pinned under the video, tied to the take, that a viewer can answer from their own life in a few words ("Would you still keep your Costco card if it cost $100 a year?"). Never "let me know in the comments", "like and subscribe" or a yes/no about the video itself.
 {{note}}

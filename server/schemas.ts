@@ -11,6 +11,8 @@ export const ScriptShape = z.object({
   title: z.string().min(1).max(70),
   // Long videos: two more titles for YouTube's Test & Compare, each drawn its own thumbnail (prompts/script-long.md).
   alt_titles: z.array(z.string().min(1).max(70)).max(2).optional(),
+  // The calm styles: the question for the pinned comment, tied to the video's take (written to comment.txt).
+  pinned_comment: z.string().min(1).max(200).optional(),
   hook: z.string().min(1),
   analogy: z.string().min(1),
   analogy_breaks_down: z.string().min(1),
@@ -186,6 +188,9 @@ export const Research = z.object({
   facts: z.array(z.object({ fact: z.string().min(1), date: z.string().min(1), source: z.string().min(1) })).min(1).max(15),
 });
 export type Research = z.infer<typeof Research>;
+
+// A cover looked at the size a phone shows it (prompts/cover-check.md); `note` says what to redraw when it fails.
+export const CoverCheck = z.object({ ok: z.boolean(), note: z.string() });
 
 // Topic ideas for the channel (prompts/pitch.md), each already packaged with its title and opening line.
 export const SERIES = ["How it makes money", "Why it costs more", "Money news"] as const;

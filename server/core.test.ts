@@ -756,3 +756,37 @@ test("research text dates every fact and tells Sky the research wins", async () 
   assert.match(t, /What's new: The fee rose\./);
   assert.match(t, /they win/);
 });
+
+test("pinned comment asks for Hype only on long videos", async () => {
+  const { pinnedComment } = await import("./bots/remotion.ts");
+  assert.equal(pinnedComment("Would you pay $100?", false), "Would you pay $100?\n");
+  assert.match(pinnedComment("Would you pay $100?", true), /^Would you pay \$100\?\n\n.*Hype/);
+});
+
+test("only long videos get the end screen's extra seconds", async () => {
+  const { tailOf } = await import("../remotion/Explainer.tsx");
+  const { END_SCREEN } = await import("../remotion/mono.ts");
+  assert.equal(tailOf({ wide: true }), END_SCREEN);
+  assert.equal(tailOf({ wide: true, endCard: "Full video on my channel" }), 0); // a chapter Short keeps its end card
+  assert.equal(tailOf({}), 0);
+});
+
+test("Inworld word timings become captions, whichever shape the docs' word list takes", async () => {
+  const { inworldWords } = await import("./bots/voice.ts");
+  const times = (n: number) => ({ wordStartTimeSeconds: Array.from({ length: n }, (_, k) => k / 10), wordEndTimeSeconds: Array.from({ length: n }, (_, k) => k / 10 + 0.05) });
+  // Every token, spaces and punctuation included, with the steering tag split over tokens and a "$" on its own.
+  const all = ["[warm,", " ", "calm]", " ", "It", " ", "costs", " ", "$", "65", ".", ""];
+  assert.deepEqual(inworldWords({ words: all, ...times(all.length) }, 10, 2).map((w) => [w.word, w.start, w.scene]), [["It", 10.4, 2], ["costs", 10.6, 2], ["$65", 10.9, 2]].map(([w, s, c]) => [w === "$65" ? "$65." : w, s, c]));
+  // Bare words with punctuation attached.
+  assert.deepEqual(inworldWords({ words: ["Hello,", "world!"], ...times(2) }, 0, 0).map((w) => w.word), ["Hello,", "world!"]);
+  assert.deepEqual(inworldWords(undefined, 0, 0), []); // no alignment returned: no captions, no crash
+});
+
+test("wav wraps raw 16-bit mono PCM in a 44-byte header", async () => {
+  const { wav } = await import("./bots/voice.ts");
+  const w = wav(Buffer.alloc(48000), 24000);
+  assert.equal(w.length, 44 + 48000);
+  assert.equal(w.toString("ascii", 0, 4) + w.toString("ascii", 8, 16) + w.toString("ascii", 36, 40), "RIFFWAVEfmt data");
+  assert.equal(w.readUInt32LE(24), 24000);
+  assert.equal(w.readUInt32LE(40), 48000);
+});

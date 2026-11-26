@@ -110,9 +110,10 @@ export async function drawScenes(state: State, v: VoicedScenes, todo: { i: numbe
 // A drawn thumbnail (prompts/cover.md): projects/{id}/covers/{name}.tsx, compiled. An existing file is kept (redraw by
 // deleting it, or edit it by hand); null when it can't be drawn, so the frame-and-title cover is used instead.
 // `others`: the titles of the covers drawn beside this one (a long video's Shorts), so each gets its own idea.
-export async function drawCover(state: State, name: string, title: string, lines: string[], wide: boolean, signal: AbortSignal, others = ""): Promise<string | null> {
+export async function drawCover(state: State, name: string, title: string, lines: string[], wide: boolean, signal: AbortSignal, others = "", note?: string): Promise<string | null> {
   const f = dir(state.id, "covers", `${name}.tsx`);
-  if (!existsSync(f)) {
+  // A note (from the phone-size check) redraws a cached cover; if that fails, the old one stays.
+  if (!existsSync(f) || note) {
     const vars = {
       topic: state.topic,
       title,
@@ -126,7 +127,7 @@ export async function drawCover(state: State, name: string, title: string, lines
     };
     try {
       // Opus: one or a few covers per video, and they decide the click.
-      const out = await runClaude({ model: OPUS, prompt: fill("cover", vars), schema: Drawing.superRefine((x, ctx) => checkDrawing(x.code).forEach((message) => ctx.addIssue({ code: "custom", path: ["code"], message }))), signal });
+      const out = await runClaude({ model: OPUS, prompt: fill("cover", vars, note), schema: Drawing.superRefine((x, ctx) => checkDrawing(x.code).forEach((message) => ctx.addIssue({ code: "custom", path: ["code"], message }))), signal });
       mkdirSync(dir(state.id, "covers"), { recursive: true });
       writeFileSync(f, out.code);
     } catch (e) {

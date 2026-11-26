@@ -18,7 +18,9 @@ import * as Relics from "./components/Relics.tsx";
 import { MonoCaptions, MonoFrame, MonoMotion, MonoSound } from "./MonoLayer.tsx";
 import { LightLeaks } from "./MonoFx.tsx";
 import { Drawn } from "./drawn.tsx";
-import { OUTRO, backdropFor, dropAt, hitTime, videoEnd, type Track } from "./mono.ts";
+import { Backdrop, Defs } from "./Brand.tsx";
+import { Figure, STAND } from "./components/Mono.tsx";
+import { END_SCREEN, OUTRO, backdropFor, dropAt, hitTime, videoEnd, type Track } from "./mono.ts";
 
 export type ExplainerProps = {
   scenes: Scene[];
@@ -187,8 +189,28 @@ const VISUALS: Record<Scene["component"], React.FC<{ p: any; t: Theme; dur: numb
   ...Relics,
 };
 
+// Long videos end on END_SCREEN seconds of the mascot pointing at empty space, where YouTube's end-screen elements
+// (a video to watch next, subscribe) go. Shorts have none.
+export const tailOf = (p: Pick<ExplainerProps, "wide" | "endCard">) => (p.wide && !p.endCard ? END_SCREEN : 0);
+
+function EndScreen() {
+  const k = interpolate(useCurrentFrame(), [0, 0.8 * FPS], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const { W: w, H: h } = WIDE_CANVAS;
+  return (
+    <AbsoluteFill style={{ background: "#000", opacity: k }}>
+      <svg width={w} height={h}>
+        <Defs />
+        <Backdrop w={w} h={h} />
+        {/* Left third only: the rest stays empty for the end-screen cards. */}
+        <Figure x={330} ground={960} s={1.4} pose={STAND} front hands={[[-52, -40], [172, -175]]} />
+        <text x={1240} y={170} textAnchor="middle" fill="#fff" style={{ font: `400 84px ${font.impact}`, letterSpacing: 4 }}>WATCH NEXT</text>
+      </svg>
+    </AbsoluteFill>
+  );
+}
+
 export const calculateMetadata: CalculateMetadataFunction<ExplainerProps> = ({ props }) => {
-  return { durationInFrames: Math.ceil(videoEnd(props.scenes) * FPS), fps: FPS, width: props.wide ? WIDE.W : W, height: props.wide ? WIDE.H : H };
+  return { durationInFrames: Math.ceil((videoEnd(props.scenes) + tailOf(props)) * FPS), fps: FPS, width: props.wide ? WIDE.W : W, height: props.wide ? WIDE.H : H };
 };
 
 // Mono backdrops: one per project (backdropFor), all faint so the figures stay on top.
@@ -392,7 +414,13 @@ export function Explainer({ scenes, words, audio, music: maybe, seed = 0, calm =
       )}
       <FadeOut total={Math.ceil(end * FPS)} />
       {endCard && <EndCard text={endCard} total={Math.ceil(end * FPS)} />}
-      <MonoSound track={music} tracks={chapterMusic} scenes={scenes} words={words} seed={seed} end={end} calm={calm} />
+      {tailOf({ wide, endCard }) > 0 && (
+        <Sequence from={Math.ceil(end * FPS)} name="end screen">
+          <EndScreen />
+        </Sequence>
+      )}
+      {/* The music carries on under the end screen and fades at the very end. */}
+      <MonoSound track={music} tracks={chapterMusic} scenes={scenes} words={words} seed={seed} end={end + tailOf({ wide, endCard })} calm={calm} />
       {audio.map((a, i) => {
         const from = Math.max(0, Math.round(a.start * FPS));
         return (
