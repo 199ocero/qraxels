@@ -32,7 +32,11 @@ export function Sidebar() {
         </div>
         <span className={`dot ${sim.connected ? "on" : ""}`} title={sim.connected ? "connected" : "offline"} />
       </header>
-      {tab === "chat" ? <Chat project={chatProject} setProject={setChatFor} onOpen={openProject} /> : <Projects open={open} setOpen={setOpen} onChat={openChat} />}
+      {/* Chat stays mounted so a pending "Suggest topics" (1–2 min) and its ideas survive a trip to Projects. */}
+      <div style={{ display: tab === "chat" ? "contents" : "none" }}>
+        <Chat project={chatProject} setProject={setChatFor} onOpen={openProject} />
+      </div>
+      {tab === "projects" && <Projects open={open} setOpen={setOpen} onChat={openChat} />}
     </aside>
   );
 }

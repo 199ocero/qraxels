@@ -50,8 +50,10 @@ async function elevenlabs(id: string, scenes: Scenes["scenes"], mono: boolean, a
       method: "POST",
       signal,
       headers: { "xi-api-key": key, "content-type": "application/json" },
-      // Motivation wants a performance, not a reading: low stability + high style exaggerate the delivery.
-      body: JSON.stringify({ text: s.narration, model_id: "eleven_multilingual_v2", voice_settings: mono ? { speed: s.speed, stability: 0.3, similarity_boost: 0.8, style: 0.7, use_speaker_boost: true } : { speed: s.speed } }),
+      // Motivation wants a performance, not a reading: low stability + high style exaggerate the delivery. Explained stays
+      // steadier but below the 0.5 default stability, with a little style, so it varies instead of droning.
+      // previous_text/next_text: each scene is read as part of the script, not as a cold one-liner (not billed).
+      body: JSON.stringify({ text: s.narration, previous_text: scenes[i - 1]?.narration, next_text: scenes[i + 1]?.narration, model_id: "eleven_multilingual_v2", voice_settings: mono ? { speed: s.speed, stability: 0.3, similarity_boost: 0.8, style: 0.7, use_speaker_boost: true } : { speed: s.speed, stability: 0.45, similarity_boost: 0.75, style: 0.25, use_speaker_boost: true } }),
     });
     if (!res.ok) throw new Error(`ElevenLabs ${res.status}: ${(await res.text()).slice(0, 300)}`);
     const j = (await res.json()) as { audio_base64: string; alignment: { characters: string[]; character_start_times_seconds: number[]; character_end_times_seconds: number[] } };
@@ -75,9 +77,13 @@ async function elevenlabs(id: string, scenes: Scenes["scenes"], mono: boolean, a
 }
 
 // Inworld TTS-2, paid per character. One request per scene; the raw 16-bit audio is joined into one voice.wav with each
-// scene's pause and levelled like Kokoro's, so the music still sits right under it. A bracketed instruction steers the
-// delivery: Inworld doesn't speak it but bills it as characters, so it stays short.
-const STEER = { calm: "[warm, calm and curious, in a low tone]", hype: "[intense, with building conviction, like a coach]" };
+// scene's pause and levelled like Kokoro's, so the music still sits right under it. Reasoning writes a fresh delivery
+// instruction for each line from the context below and the scenes before it (context is not billed); one fixed tag on
+// every line made every line sound the same.
+const CONTEXT = {
+  calm: "Narrator of a calm YouTube explainer about money, talking to one curious viewer like a friend: warm, low, unhurried, with real surprise at the twists and weight on the payoff lines.",
+  hype: "Coach giving a motivational speech about money, discipline and hard work: intense, with conviction that builds line by line, quiet and heavy on the hard truths, loud on the commands.",
+};
 const PCM_RATE = 24000;
 type InworldAlignment = { words: string[]; wordStartTimeSeconds: number[]; wordEndTimeSeconds: number[] };
 
@@ -96,11 +102,17 @@ async function inworld(id: string, scenes: Scenes["scenes"], mono: boolean, acti
       signal,
       headers: { authorization: `Basic ${key}`, "content-type": "application/json" },
       body: JSON.stringify({
-        text: `${mono ? STEER.hype : STEER.calm} ${s.narration}`,
+        text: s.narration,
         voiceId,
         modelId: "inworld-tts-2",
         audioConfig: { audioEncoding: "PCM", sampleRateHertz: PCM_RATE, speakingRate: s.speed },
-        deliveryMode: mono ? "CREATIVE" : "BALANCED",
+        deliveryMode: "CREATIVE",
+        synthesisContext: {
+          reasoning: "REASONING_ON",
+          reasoningContext: mono ? CONTEXT.hype : CONTEXT.calm,
+          // the last few lines, so each scene continues the read instead of starting cold (max 5 and 2,000 chars)
+          previousRequests: scenes.slice(Math.max(0, i - 5), i).map((p) => ({ text: p.narration })).filter((_, k, a) => a.slice(k).reduce((n, p) => n + p.text.length, 0) <= 2000),
+        },
         applyTextNormalization: "ON",
         timestampType: "WORD",
       }),

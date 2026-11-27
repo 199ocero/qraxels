@@ -11,6 +11,7 @@ import { readVoiced, run, type VoicedScenes } from "./voice.ts";
 import { drawCover, drawPath, drawScenes, drawnOf, markWideOnly, tallAsOf } from "./draw.ts";
 import { musicDirFor, musicLibrary } from "../music.ts";
 import type { ExplainerProps } from "../../remotion/Explainer.tsx";
+import type { ThumbnailProps } from "../../remotion/Thumbnail.tsx";
 import { END_SCREEN, musicFor, seedOf, type Track } from "../../remotion/mono.ts";
 
 const FPS = 30;
@@ -418,12 +419,15 @@ export const thumbs: Job = async ({ state, activity, signal }) => {
     activity("drawing the thumbnail");
     const drawn = (await drawCover(state, "video", title, lines, !!video.wide, signal)) ?? undefined;
     const composition = await selectComposition({ serveUrl, id: "Thumbnail", inputProps: { video, title, cover: drawn }, chromiumOptions });
+    // renderStill hands the component composition.props, not inputProps: each cover/title needs its own props here,
+    // or every thumbnail renders the first one. Size depends only on `video`, so the rest of the composition holds.
+    const withProps = (props: ThumbnailProps) => ({ ...composition, props });
     // A cover at the size a phone shows it (360 px wide): Sonnet looks at it there, and it's redrawn once with what
     // didn't read. Only this video's covers; the chapter Shorts' covers aren't checked.
     const atPhoneSize = async (name: string, t: string, c: string, others = ""): Promise<string> => {
       const small = `covers/${name}-phone.jpeg`;
       try {
-        await renderStill({ serveUrl, composition, inputProps: { video, title: t, cover: c }, chromiumOptions, envVariables, frame: 0, output: dir(state.id, small), imageFormat: "jpeg", jpegQuality: 90, scale: 360 / composition.width });
+        await renderStill({ serveUrl, composition: withProps({ video, title: t, cover: c }), chromiumOptions, envVariables, frame: 0, output: dir(state.id, small), imageFormat: "jpeg", jpegQuality: 90, scale: 360 / composition.width });
         activity(`checking ${name === "video" ? "the thumbnail" : name} at phone size`);
         const check = await runClaude({ model: SONNET, prompt: fill("cover-check", { file: small, title: t, px: "360" }), schema: CoverCheck, tools: ["Read"], cwd: dir(state.id), signal });
         if (check.ok) return c;
@@ -439,7 +443,7 @@ export const thumbs: Job = async ({ state, activity, signal }) => {
     const inputProps = { video, title, cover };
     for (const [i, frame] of frames.entries()) {
       activity(`thumbnail ${i + 1}/${frames.length}`);
-      await renderStill({ serveUrl, composition, inputProps, chromiumOptions, envVariables, frame, output: join(out, `thumb-${i + 1}.jpeg`), imageFormat: "jpeg", jpegQuality: 90 });
+      await renderStill({ serveUrl, composition: withProps(inputProps), chromiumOptions, envVariables, frame, output: join(out, `thumb-${i + 1}.jpeg`), imageFormat: "jpeg", jpegQuality: 90 });
     }
     const size = video.wide ? "1920x1080, for the YouTube video" : "1080x1920, for YouTube Shorts and Reels";
     // Long videos: one more drawn cover per alternative title, so YouTube's Test & Compare gets up to 3 title +
@@ -452,7 +456,7 @@ export const thumbs: Job = async ({ state, activity, signal }) => {
       const first = await drawCover(state, `video-${i + 2}`, alt, lines, true, signal, others);
       if (!first) continue;
       const c = await atPhoneSize(`video-${i + 2}`, alt, first, others);
-      await renderStill({ serveUrl, composition, inputProps: { video, title: alt, cover: c }, chromiumOptions, envVariables, frame: 0, output: join(out, `thumb-${pairs.length + 1}.jpeg`), imageFormat: "jpeg", jpegQuality: 90 });
+      await renderStill({ serveUrl, composition: withProps({ video, title: alt, cover: c }), chromiumOptions, envVariables, frame: 0, output: join(out, `thumb-${pairs.length + 1}.jpeg`), imageFormat: "jpeg", jpegQuality: 90 });
       pairs.push(`thumb-${pairs.length + 1}.jpeg  ${alt}`);
     }
     if (pairs.length > 1) {
